@@ -1,0 +1,79 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ dish.name }} - Details</title>
+    <link rel="stylesheet" href="{% static 'foodapp/css/style.css' %}">
+</head>
+<body>
+    <div class="home-button-container">
+        <div class="nav-buttons">
+            <a href="{% url 'accueil' %}" class="home-button">
+                <span class="home-icon">🏠</span>
+                Home
+            </a>
+            <a href="javascript:history.back()" class="home-button">
+                <span class="home-icon">⬅️</span>
+                Back
+            </a>
+        </div>
+    </div>
+
+    <div class="dish-detail-container">
+        <div class="dish-detail-header">
+            {% if dish.image %}
+                <img src="{{ dish.image.url }}" alt="{{ dish.name }}" class="dish-detail-image">
+            {% endif %}
+            <div class="dish-detail-info">
+                <h1>{{ dish.name }}</h1>
+                <p class="dish-city">From {{ dish.city.name }}</p>
+                <div class="dish-badges">
+                    <span class="dish-type-badge">{{ dish.get_type_display }}</span>
+                    <span class="price-badge">{{ dish.get_price_range_display }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="dish-detail-content">
+            <section class="dish-section">
+                <h2>📝 Description</h2>
+                <p>{{ dish.description|linebreaks }}</p>
+            </section>
+
+            <section class="dish-section">
+                <h2>🥗 Ingredients</h2>
+                <p>{{ dish.ingredients|linebreaks }}</p>
+            </section>
+
+            <section class="dish-section">
+                <h2>📚 History</h2>
+                <p>{{ dish.history|linebreaks }}</p>
+            </section>
+
+            <section class="dish-section">
+                <h2>👨‍🍳 Preparation</h2>
+                <p>{{ dish.preparation_steps|linebreaks }}</p>
+            </section>
+
+            {% if dish.bad_for_cholesterol or dish.bad_for_sugar or dish.bad_for_lactose %}
+            <section class="dish-warnings-section">
+                <h2>⚠️ Warnings</h2>
+                <div class="dish-warnings">
+                    {% if dish.bad_for_cholesterol %}
+                        <span class="warning">High Cholesterol</span>
+                    {% endif %}
+                    {% if dish.bad_for_sugar %}
+                        <span class="warning">High Sugar</span>
+                    {% endif %}
+                    {% if dish.bad_for_lactose %}
+                        <span class="warning">Contains Lactose</span>
+                    {% endif %}
+                </div>
+            </section>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

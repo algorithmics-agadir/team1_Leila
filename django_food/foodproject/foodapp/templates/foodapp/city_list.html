@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Villes - FoodFlex</title>
+    {% load static %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #FF6B6B;
+            --secondary-color: #4ECDC4;
+            --tertiary-color: #FF9F1C;
+            --light-bg: #ffffff;
+            --light-gray: #f8f9fa;
+            --text-dark: #2D3748;
+            --text-gray: #718096;
+            --text-light: #f8f9fa;
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+            --border-radius: 12px;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        body {
+            background-color: var(--light-gray);
+            color: var(--text-dark);
+            padding: 40px 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .page-header {
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+        }
+        
+        .page-title {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 10px;
+        }
+        
+        .page-subtitle {
+            font-size: 16px;
+            color: var(--text-gray);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .city-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 30px;
+        }
+        
+        .city-card {
+            background-color: var(--light-bg);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .city-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .city-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        
+        .city-image-placeholder {
+            width: 100%;
+            height: 200px;
+            background-color: var(--secondary-color);
+            opacity: 0.2;
+        }
+        
+        .city-content {
+            padding: 20px;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .city-name {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--text-dark);
+        }
+        
+        .city-description {
+            font-size: 14px;
+            color: var(--text-gray);
+            margin-bottom: 20px;
+            flex-grow: 1;
+        }
+        
+        .city-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: auto;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background-color: var(--light-gray);
+            color: var(--text-dark);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .nav-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-gray);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 20px;
+            transition: color 0.3s ease;
+        }
+        
+        .nav-back:hover {
+            color: var(--primary-color);
+        }
+        
+        @media (max-width: 768px) {
+            .city-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="{% url 'accueil' %}" class="nav-back">
+            <i class="fas fa-arrow-left"></i> Retour à l'accueil
+        </a>
+        
+        <div class="page-header">
+            <h1 class="page-title">Découvrez nos villes</h1>
+            <p class="page-subtitle">Explorez la richesse culinaire de chaque ville et découvrez leurs spécialités gastronomiques</p>
+        </div>
+        
+        <div class="city-grid">
+            {% for city in cities %}
+                <div class="city-card">
+                    {% if city.image %}
+                        <img src="{{ city.image.url }}" alt="{{ city.name }}" class="city-image">
+                    {% else %}
+                        <div class="city-image-placeholder"></div>
+                    {% endif %}
+                    <div class="city-content">
+                        <h2 class="city-name">{{ city.name }}</h2>
+                        <p class="city-description">{{ city.description }}</p>
+                        <div class="city-actions">
+                            <a href="{% url 'dish_list' %}?city={{ city.id }}" class="btn btn-primary">
+                                <i class="fas fa-utensils"></i> Explorer les plats
+                            </a>
+                            <a href="{% url 'restaurants' %}?city={{ city.id }}" class="btn btn-secondary">
+                                <i class="fas fa-store"></i> Voir les restaurants
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="empty-state">
+                    <p>Aucune ville trouvée.</p>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>

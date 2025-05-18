@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dishes in {{ selected_city.name|default:"All Cities" }}</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'foodapp/css/style.css' %}">
+</head>
+<body>
+    <div class="home-button-container">
+        <div class="nav-buttons">
+            <a href="{% url 'accueil' %}" class="home-button">
+                <span class="home-icon">🏠</span>
+                Home
+            </a>
+            <a href="{% url 'currency_converter' %}" class="home-button">
+                <span class="home-icon">💱</span>
+                Converter
+            </a>
+        </div>
+    </div>
+    
+    {% if selected_city %}
+    <div class="city-header">
+        {% if selected_city.image %}
+            <div class="city-banner" style="background-image: url('{{ selected_city.image.url }}')">
+                <div class="city-info">
+                    <h1>{{ selected_city.name }}</h1>
+                    <p>{{ selected_city.description }}</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+    {% else %}
+        <h1 class="main-title">Explore Our Dishes</h1>
+    {% endif %}
+
+    <div class="container">
+        <div class="filter-section">
+            <div class="filter-header">
+                <h2>🔍 Filter Your Dishes</h2>
+            </div>
+            <form method="get" class="filter-form">
+                <div class="filter-group">
+                    <div class="filter-category">
+                        <h3>📍 Location</h3>
+                        <div class="select-wrapper">
+                            {{ form.city }}
+                        </div>
+                    </div>
+                    <div class="filter-category">
+                        <h3>🍽️ Type of Dish</h3>
+                        <div class="select-wrapper">
+                            {{ form.type }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <div class="filter-category">
+                        <h3>🥗 Dietary Preferences</h3>
+                        <div class="dietary-selector">
+                            <div class="dietary-option">
+                                <input type="checkbox" id="vegetarian" name="is_vegetarian"
+                                       {% if request.GET.is_vegetarian %}checked{% endif %}>
+                                <label for="vegetarian" class="dietary-label">
+                                    <span class="icon">🥬</span>
+                                    <span class="title">Vegetarian</span>
+                                    <span class="description">No meat products</span>
+                                </label>
+                            </div>
+                            <div class="dietary-option">
+                                <input type="checkbox" id="vegan" name="is_vegan"
+                                       {% if request.GET.is_vegan %}checked{% endif %}>
+                                <label for="vegan" class="dietary-label">
+                                    <span class="icon">🌱</span>
+                                    <span class="title">Vegan</span>
+                                    <span class="description">No animal products</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="filter-category">
+                        <h3>💰 Price Range</h3>
+                        <div class="price-selector">
+                            {% for value, label in form.price_range.field.choices %}
+                            <div class="price-option">
+                                <input type="checkbox" id="price_{{ value }}" name="price_range" value="{{ value }}"
+                                       {% if value in request.GET.price_range %}checked{% endif %}>
+                                <label for="price_{{ value }}" class="price-label">
+                                    <span class="icon">{% if value == 'low' %}💰{% elif value == 'medium' %}💰💰{% else %}💰💰💰{% endif %}</span>
+                                    <span class="title">{{ label }}</span>
+                                    <span class="description">{% if value == 'low' %}Budget friendly{% elif value == 'medium' %}Moderate{% else %}Premium{% endif %}</span>
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <div class="filter-category">
+                        <h3>⚠️ Health Restrictions</h3>
+                        <div class="health-selector">
+                            <div class="health-option">
+                                <input type="checkbox" 
+                                       id="{{ form.bad_for_cholesterol.id_for_label }}"
+                                       name="{{ form.bad_for_cholesterol.html_name }}"
+                                       {% if form.bad_for_cholesterol.value %}checked{% endif %}
+                                       class="health-checkbox">
+                                <label for="{{ form.bad_for_cholesterol.id_for_label }}" class="health-label">
+                                    <span class="icon">❤️</span>
+                                    <span class="title">Cholesterol Issues</span>
+                                </label>
+                            </div>
+                            
+                            <div class="health-option">
+                                <input type="checkbox" 
+                                       id="{{ form.bad_for_sugar.id_for_label }}"
+                                       name="{{ form.bad_for_sugar.html_name }}"
+                                       {% if form.bad_for_sugar.value %}checked{% endif %}
+                                       class="health-checkbox">
+                                <label for="{{ form.bad_for_sugar.id_for_label }}" class="health-label">
+                                    <span class="icon">🍯</span>
+                                    <span class="title">Diabetes</span>
+                                </label>
+                            </div>
+
+                            <div class="health-option">
+                                <input type="checkbox" 
+                                       id="{{ form.bad_for_lactose.id_for_label }}"
+                                       name="{{ form.bad_for_lactose.html_name }}"
+                                       {% if form.bad_for_lactose.value %}checked{% endif %}
+                                       class="health-checkbox">
+                                <label for="{{ form.bad_for_lactose.id_for_label }}" class="health-label">
+                                    <span class="icon">🥛</span>
+                                    <span class="title">Lactose Intolerant</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button type="submit" class="filter-button">Apply Filters</button>
+            </form>
+        </div>
+
+        <div class="dishes-grid">
+            {% for dish in dishes %}
+                <div class="dish-card">
+                    <a href="{% url 'dish_detail' dish.id %}" class="dish-link">
+                        <div class="dish-image-container">
+                        {% if dish.image %}
+                            <img src="{{ dish.image.url }}" alt="{{ dish.name }}" class="dish-image">
+                        {% else %}
+                            <div class="dish-image-placeholder"></div>
+                        {% endif %}
+                        </div>
+                        <div class="dish-details">
+                            <div class="dish-header">
+                                <h3>{{ dish.name }}</h3>
+                                <p class="dish-city-name">{{ dish.city.name }}</p>
+                            </div>
+                            <div class="dish-tags">
+                                <span class="dish-type-badge">{{ dish.get_type_display }}</span>
+                                <span class="price-badge">{{ dish.get_price_range_display }}</span>
+                            </div>
+                            <div class="dish-warnings">
+                                {% if dish.bad_for_cholesterol %}
+                                    <span class="warning">⚠️ High Cholesterol</span>
+                                {% endif %}
+                                {% if dish.bad_for_sugar %}
+                                    <span class="warning">⚠️ High Sugar</span>
+                                {% endif %}
+                                {% if dish.bad_for_lactose %}
+                                    <span class="warning">⚠️ Contains Lactose</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            {% empty %}
+                <div class="no-results">No dishes found matching your criteria.</div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>

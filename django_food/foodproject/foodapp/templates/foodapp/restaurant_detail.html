@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ restaurant.name }} - FoodFlex</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+    {% load static %}
+    <style>
+        :root {
+            --primary-color: #FF6B6B;
+            --secondary-color: #4ECDC4;
+            --accent-orange: #FF9F1C;
+            --light-bg: #ffffff;
+            --light-gray: #f8f9fa;
+            --text-dark: #2D3748;
+            --text-gray: #718096;
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+            --radius: 12px;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        body {
+            background-color: var(--light-bg);
+            color: var(--text-dark);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .header {
+            background-color: var(--light-bg);
+            box-shadow: var(--shadow-sm);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-color);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .nav-buttons {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .nav-btn {
+            background-color: var(--light-gray);
+            border: none;
+            border-radius: 50px;
+            padding: 8px 16px;
+            font-weight: 500;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        
+        .nav-btn:hover {
+            background-color: var(--primary-color);
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        .main-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        .restaurant-header {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+            opacity: 0;
+        }
+        
+        .restaurant-gallery {
+            position: relative;
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+            height: 400px;
+        }
+        
+        .gallery-main {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .status-badge {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+            z-index: 2;
+        }
+        
+        .status-open {
+            background-color: var(--secondary-color);
+        }
+        
+        .status-closed {
+            background-color: var(--primary-color);
+        }
+        
+        .restaurant-info {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .restaurant-name {
+            font-size: 42px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            line-height: 1.2;
+        }
+        
+        .restaurant-meta {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            color: var(--text-gray);
+        }
+        
+        .restaurant-city {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .separator {
+            width: 4px;
+            height: 4px;
+            background-color: var(--text-gray);
+            border-radius: 50%;
+        }
+        
+        .restaurant-description {
+            font-size: 16px;
+            line-height: 1.7;
+            color: var(--text-gray);
+            margin-bottom: 30px;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: auto;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border-radius: 50px;
+            border: none;
+            font-weight: 600;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background-color: var(--light-gray);
+            color: var(--text-dark);
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .content-section {
+            margin-bottom: 50px;
+            opacity: 0;
+        }
+        
+        .section-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .section-title i {
+            color: var(--primary-color);
+        }
+        
+        .contact-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .contact-item {
+            background-color: var(--light-gray);
+            padding: 20px;
+            border-radius: var(--radius);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .contact-item:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .contact-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: var(--primary-color);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        
+        .contact-content {
+            flex: 1;
+        }
+        
+        .contact-label {
+            font-size: 12px;
+            color: var(--text-gray);
+            margin-bottom: 5px;
+        }
+        
+        .contact-value {
+            font-size: 14px;
+            font-weight: 500;
+            word-break: break-word;
+        }
+        
+        .contact-value a {
+            color: inherit;
+            text-decoration: none;
+        }
+        
+        .contact-value a:hover {
+            color: var(--primary-color);
+        }
+        
+        .map-container {
+            height: 400px;
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+        }
+        
+        #restaurant-map {
+            height: 100%;
+        }
+        
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+        
+        .dish-card {
+            background-color: var(--light-bg);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+            transition: all 0.4s ease;
+        }
+        
+        .dish-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .dish-image {
+            height: 200px;
+            width: 100%;
+            object-fit: cover;
+        }
+        
+        .dish-info {
+            padding: 20px;
+        }
+        
+        .dish-name {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-dark);
+        }
+        
+        .dish-type {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-bottom: 15px;
+            background-color: rgba(78, 205, 196, 0.1);
+            color: var(--secondary-color);
+        }
+        
+        .dish-type.sweet {
+            background-color: rgba(255, 159, 28, 0.1);
+            color: var(--accent-orange);
+        }
+        
+        .dish-type.drink {
+            background-color: rgba(255, 107, 107, 0.1);
+            color: var(--primary-color);
+        }
+        
+        .dish-desc {
+            font-size: 14px;
+            color: var(--text-gray);
+            margin-bottom: 15px;
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .dish-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .dish-price {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        .review-section {
+            margin-top: 50px;
+        }
+        
+        .review-form {
+            background-color: var(--light-gray);
+            padding: 20px;
+            border-radius: var(--radius);
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: var(--radius);
+            background-color: white;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
+        }
+        
+        @media (max-width: 768px) {
+            .restaurant-header {
+                grid-template-columns: 1fr;
+            }
+            
+            .restaurant-gallery {
+                height: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="header-content">
+            <a href="{% url 'accueil' %}" class="logo">
+                <i class="fas fa-utensils"></i>
+                <span>FoodFlex</span>
+            </a>
+            
+            <div class="nav-buttons">
+                <a href="{% url 'accueil' %}" class="nav-btn">
+                    <i class="fas fa-home"></i>
+                    <span>Accueil</span>
+                </a>
+                <a href="{% url 'restaurants' %}" class="nav-btn">
+                    <i class="fas fa-store"></i>
+                    <span>Restaurants</span>
+                </a>
+                <a href="{% url 'dish_list' %}" class="nav-btn">
+                    <i class="fas fa-hamburger"></i>
+                    <span>Plats</span>
+                </a>
+            </div>
+        </div>
+    </header>
+    
+    <div class="main-content">
+        <section class="restaurant-header">
+            <div class="restaurant-gallery">
+                {% if restaurant.is_open %}
+                <div class="status-badge status-open">Ouvert</div>
+                {% else %}
+                <div class="status-badge status-closed">Fermé</div>
+                {% endif %}
+                
+                {% if restaurant.image %}
+                <img src="{{ restaurant.image.url }}" alt="{{ restaurant.name }}" class="gallery-main">
+                {% else %}
+                <div style="background-color: #f8f9fa; height: 100%; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-utensils" style="font-size: 60px; color: #ddd;"></i>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="restaurant-info">
+                <h1 class="restaurant-name">{{ restaurant.name }}</h1>
+                
+                <div class="restaurant-meta">
+                    <div class="restaurant-city">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>{{ restaurant.city.name }}</span>
+                    </div>
+                    <div class="separator"></div>
+                    <div class="restaurant-status">
+                        <i class="fas fa-clock"></i>
+                        <span>{{ restaurant.is_open|yesno:'Ouvert,Fermé' }}</span>
+                    </div>
+                </div>
+                
+                <p class="restaurant-description">
+                    {{ restaurant.description|default:"Bienvenue dans notre restaurant ! Nous proposons une variété de plats délicieux préparés avec des ingrédients frais et de qualité." }}
+                </p>
+                
+                                <div class="action-buttons">                    <a href="{% url 'reservation' restaurant.id %}" class="btn btn-primary">                        <i class="fas fa-calendar-check"></i>                        <span>Réserver une table</span>                    </a>                    <a href="#contact" class="btn btn-secondary">                        <i class="fas fa-phone"></i>                        <span>Nous contacter</span>                    </a>                    {% if restaurant.website %}                    <a href="{{ restaurant.website }}" target="_blank" class="btn btn-secondary">                        <i class="fas fa-globe"></i>                        <span>Site web</span>                    </a>                    {% endif %}                </div>
+            </div>
+        </section>
+        
+        <section id="contact" class="content-section">
+            <h2 class="section-title">
+                <i class="fas fa-address-card"></i>
+                <span>Informations de contact</span>
+            </h2>
+            
+            <div class="contact-grid">
+                <div class="contact-item">
+                    <div class="contact-icon">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </div>
+                    <div class="contact-content">
+                        <div class="contact-label">Adresse</div>
+                        <div class="contact-value">{{ restaurant.address }}</div>
+                    </div>
+                </div>
+                
+                <div class="contact-item">
+                    <div class="contact-icon">
+                        <i class="fas fa-phone"></i>
+                    </div>
+                    <div class="contact-content">
+                        <div class="contact-label">Téléphone</div>
+                        <div class="contact-value">
+                            <a href="tel:{{ restaurant.phone }}">{{ restaurant.phone }}</a>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="contact-item">
+                    <div class="contact-icon">
+                        <i class="fas fa-envelope"></i>
+                    </div>
+                    <div class="contact-content">
+                        <div class="contact-label">Email</div>
+                        <div class="contact-value">
+                            <a href="mailto:{{ restaurant.email }}">{{ restaurant.email }}</a>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if restaurant.website %}
+                <div class="contact-item">
+                    <div class="contact-icon">
+                        <i class="fas fa-globe"></i>
+                    </div>
+                    <div class="contact-content">
+                        <div class="contact-label">Site web</div>
+                        <div class="contact-value">
+                            <a href="{{ restaurant.website }}" target="_blank">{{ restaurant.website }}</a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </section>
+        
+        <section class="content-section">
+            <h2 class="section-title">
+                <i class="fas fa-map-marked-alt"></i>
+                <span>Localisation</span>
+            </h2>
+            
+            <div class="map-container">
+                <div id="restaurant-map"></div>
+            </div>
+        </section>
+        
+        <section class="content-section">
+            <h2 class="section-title">
+                <i class="fas fa-utensils"></i>
+                <span>Plats populaires de {{ restaurant.city.name }}</span>
+            </h2>
+            
+            <div class="card-grid">
+                {% for dish in city_dishes %}
+                <div class="dish-card">
+                    {% if dish.image %}
+                    <img src="{{ dish.image.url }}" alt="{{ dish.name }}" class="dish-image">
+                    {% else %}
+                    <div class="dish-image" style="background-color: #f8f9fa; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-hamburger" style="font-size: 48px; color: #ddd;"></i>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="dish-info">
+                        <h3 class="dish-name">{{ dish.name }}</h3>
+                        <span class="dish-type {{ dish.type }}">{{ dish.get_type_display }}</span>
+                        <p class="dish-desc">
+                            {{ dish.description|default:"Un délicieux plat de la région." }}
+                        </p>
+                        <div class="dish-footer">
+                            <span class="dish-price">{{ dish.get_price_range_display }}</span>
+                            <a href="{% url 'dish_detail' dish.id %}" class="btn btn-secondary">
+                                <i class="fas fa-info-circle"></i>
+                                <span>Détails</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div style="grid-column: 1/-1; text-align: center; padding: 30px; color: var(--text-gray);">
+                    <i class="fas fa-exclamation-circle" style="font-size: 48px; margin-bottom: 20px;"></i>
+                    <h3>Aucun plat trouvé pour cette ville</h3>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Animation avec GSAP
+            gsap.to('.restaurant-header', {
+                opacity: 1,
+                y: 0,
+                duration: 0.8,
+                ease: 'power3.out'
+            });
+            
+            gsap.to('.content-section', {
+                opacity: 1,
+                y: 0,
+                duration: 0.6,
+                stagger: 0.2,
+                ease: 'power3.out',
+                delay: 0.5
+            });
+            
+            // Initialiser la carte Leaflet
+            const map = L.map('restaurant-map').setView([48.8566, 2.3522], 13);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            }).addTo(map);
+            
+            // Ajouter un marqueur pour le restaurant
+            // Note: Dans une application réelle, vous devriez géocoder l'adresse du restaurant
+            const marker = L.marker([48.8566, 2.3522]).addTo(map);
+            marker.bindPopup('<b>{{ restaurant.name }}</b><br>{{ restaurant.address }}').openPopup();
+            
+            // Animation smooth scroll pour les ancres
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    
+                    document.querySelector(this.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html> 

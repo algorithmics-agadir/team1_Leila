@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>FoodFlex | Your Desktop Food Experience</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'foodapp/css/accueil.css' %}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.css" />
+    <style>
+        .swiper {
+            width: 100%;
+            height: 500px;
+            margin-top: 60px;
+        }
+        
+        .swiper-slide {
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .swiper-slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .slide-content {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 20px;
+            text-align: left;
+        }
+        
+        .swiper-pagination-bullet {
+            background: var(--primary-color);
+        }
+        
+        .user-menu {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+            display: flex;
+            gap: 15px;
+        }
+        
+        .user-btn {
+            background: var(--gradient);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .paladium-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+        
+        .paladium-card {
+            background-color: var(--card-bg);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .paladium-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .card-image {
+            height: 180px;
+            width: 100%;
+            position: relative;
+        }
+        
+        .card-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .card-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: var(--gradient);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .card-content {
+            padding: 20px;
+        }
+        
+        .card-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+        
+        .card-description {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: 15px;
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-top: 15px;
+        }
+        
+        .card-price {
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+        
+        .card-button {
+            background: var(--gradient);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: transform 0.2s ease;
+        }
+        
+        .card-button:hover {
+            transform: scale(1.05);
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        
+        .view-all {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+        
+        .view-all:hover {
+            color: var(--secondary-color);
+        }
+    </style>
+</head>
+<body>
+    <!-- Conteneur pour l'animation Three.js -->
+    <div class="scene-container"></div>
+    
+    <!-- Conteneur principal de l'application -->
+    <div class="user-menu">
+        <a href="{% url 'index' %}" class="user-btn">Login</a>
+        <a href="{% url 'index' %}" class="user-btn">Sign Up</a>
+    </div>
+    
+    <div class="app-container">
+        <!-- Section héros -->
+        <section class="hero-section">
+            <div class="logo-container">
+                <div class="logo">FoodFlex</div>
+            </div>
+            <p class="tagline">Discover a new culinary experience with our modern and intuitive desktop application</p>
+            <div class="cta-buttons">
+                <a href="{% url 'index' %}" class="btn btn-primary">Explore App</a>
+                <a href="#features" class="btn btn-secondary">Learn More</a>
+            </div>
+        </section>
+        
+        <div class="swiper mySwiper">
+            <div class="swiper-wrapper">
+                {% for dish in featured_dishes %}
+                <div class="swiper-slide">
+                    {% if dish.image %}
+                        <img src="{{ dish.image.url }}" alt="{{ dish.name }}">
+                    {% else %}
+                        <img src="https://images.unsplash.com/photo-1555939594-58d7cb561ad1" alt="{{ dish.name }}">
+                    {% endif %}
+                    <div class="slide-content">
+                        <h3>{{ dish.name }}</h3>
+                        <p>{{ dish.description|truncatechars:100 }}</p>
+                        <a href="{% url 'dish_detail' dish.id %}" class="btn btn-primary">View Details</a>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="swiper-slide">
+                    <img src="https://images.unsplash.com/photo-1555939594-58d7cb561ad1" alt="Featured Dish">
+                    <div class="slide-content">
+                        <h3>Delicious Cuisine</h3>
+                        <p>Explore our wide range of culinary delights from around the world</p>
+                        <a href="{% url 'dish_list' %}" class="btn btn-primary">Browse All</a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <div class="swiper-pagination"></div>
+        </div>
+        
+        <!-- Section caractéristiques -->
+        <section id="features" class="features-section">
+            <h2 class="section-title">Main Features</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-utensils"></i>
+                    </div>
+                    <h3 class="feature-title">Culinary Diversity</h3>
+                    <p class="feature-description">Explore dishes from different cuisines and cultures, each with authentic recipes and quality ingredients.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </div>
+                    <h3 class="feature-title">Local Restaurants</h3>
+                    <p class="feature-description">Discover the best restaurants in your city with customized filters based on your food preferences.</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <h3 class="feature-title">Health Options</h3>
+                    <p class="feature-description">Filters for special diets, allergies, and dietary restrictions for a personalized experience.</p>
+                </div>
+            </div>
+        </section>
+        
+        <section class="trending-section">
+            <div class="section-header">
+                <h2 class="section-title">Trending Dishes</h2>
+                <a href="{% url 'dish_list' %}" class="view-all">View All <i class="fas fa-arrow-right"></i></a>
+            </div>
+            <div class="paladium-cards">
+                {% for dish in dishes %}
+                <div class="paladium-card">
+                    <div class="card-image">
+                        {% if dish.image %}
+                            <img src="{{ dish.image.url }}" alt="{{ dish.name }}">
+                        {% else %}
+                            <img src="https://images.unsplash.com/photo-1559847844-5315695dadae" alt="{{ dish.name }}">
+                        {% endif %}
+                        <span class="card-badge">{{ dish.get_price_range_display }}</span>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="card-title">{{ dish.name }}</h3>
+                        <p class="card-description">{{ dish.description|truncatechars:100 }}</p>
+                        <div class="card-footer">
+                            <span class="card-price">{{ dish.city.name }}</span>
+                            <a href="{% url 'dish_detail' dish.id %}" class="card-button">View</a>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="paladium-card">
+                    <div class="card-image">
+                        <img src="https://images.unsplash.com/photo-1513104890138-7c749659a591" alt="Italian Pizza">
+                        <span class="card-badge">$$</span>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="card-title">Italian Pizza</h3>
+                        <p class="card-description">Classic pizza with tomatoes, mozzarella and basil</p>
+                        <div class="card-footer">
+                            <span class="card-price">Rome</span>
+                            <a href="{% url 'dish_list' %}" class="card-button">View</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="paladium-card">
+                    <div class="card-image">
+                        <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd" alt="Moroccan Tagine">
+                        <span class="card-badge">$$$</span>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="card-title">Moroccan Tagine</h3>
+                        <p class="card-description">Traditional Moroccan tagine with olives and preserved lemons</p>
+                        <div class="card-footer">
+                            <span class="card-price">Marrakech</span>
+                            <a href="{% url 'dish_list' %}" class="card-button">View</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="paladium-card">
+                    <div class="card-image">
+                        <img src="https://images.unsplash.com/photo-1551024709-8f23befc6f87" alt="Sushi Platter">
+                        <span class="card-badge">$$$</span>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="card-title">Sushi Platter</h3>
+                        <p class="card-description">Assortment of fresh sushi and sashimi with wasabi and soy sauce</p>
+                        <div class="card-footer">
+                            <span class="card-price">Tokyo</span>
+                            <a href="{% url 'dish_list' %}" class="card-button">View</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="paladium-card">
+                    <div class="card-image">
+                        <img src="https://images.unsplash.com/photo-1579684947550-22e945225d9a" alt="French Croissant">
+                        <span class="card-badge">$</span>
+                    </div>
+                    <div class="card-content">
+                        <h3 class="card-title">French Croissant</h3>
+                        <p class="card-description">Buttery, flaky viennoiserie pastry of Austrian origin</p>
+                        <div class="card-footer">
+                            <span class="card-price">Paris</span>
+                            <a href="{% url 'dish_list' %}" class="card-button">View</a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        
+        <section class="cities-section">
+            <div class="section-header">
+                <h2 class="section-title">Explore Cities</h2>
+                <a href="#" class="view-all">View All <i class="fas fa-arrow-right"></i></a>
+            </div>
+            <div class="paladium-cards">
+                {% for city in cities %}
+                <div class="paladium-card">
+                    <div class="card-image">
+                        {% if city.image %}
+                            <img src="{{ city.image.url }}" alt="{{ city.name }}">
+                        {% else %}
+                            <img src="https://images.unsplash.com/photo-1534430480872-3498386e7856" alt="{{ city.name }}">
+                        {% endif %}
+                    </div>
+                    <div class="card-content">
+                        <h3 class="card-title">{{ city.name }}</h3>
+                        <p class="card-description">{{ city.description|truncatechars:100 }}</p>
+                        <div class="card-footer">
+                            <span class="card-price">{{ city.restaurants.count }} Restaurants</span>
+                            <a href="{% url 'dish_list' %}?city={{ city.id }}" class="card-button">Explore</a>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="paladium-card">
+                    <div class="card-image">
+                        <img src="https://images.unsplash.com/photo-1534430480872-3498386e7856" alt="Paris">
+                    </div>
+                    <div class="card-content">
+                        <h3 class="card-title">Paris</h3>
+                        <p class="card-description">Explore the city of lights and its renowned culinary scene</p>
+                        <div class="card-footer">
+                            <span class="card-price">15 Restaurants</span>
+                            <a href="{% url 'dish_list' %}" class="card-button">Explore</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="paladium-card">
+                    <div class="card-image">
+                        <img src="https://images.unsplash.com/photo-1543832923-44667a44c804" alt="Tokyo">
+                    </div>
+                    <div class="card-content">
+                        <h3 class="card-title">Tokyo</h3>
+                        <p class="card-description">Discover the vibrant food culture of Japan's capital</p>
+                        <div class="card-footer">
+                            <span class="card-price">20 Restaurants</span>
+                            <a href="{% url 'dish_list' %}" class="card-button">Explore</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="paladium-card">
+                    <div class="card-image">
+                        <img src="https://images.unsplash.com/photo-1518391846015-55a9cc003b25" alt="Rome">
+                    </div>
+                    <div class="card-content">
+                        <h3 class="card-title">Rome</h3>
+                        <p class="card-description">Experience authentic Italian cuisine in the eternal city</p>
+                        <div class="card-footer">
+                            <span class="card-price">12 Restaurants</span>
+                            <a href="{% url 'dish_list' %}" class="card-button">Explore</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="paladium-card">
+                    <div class="card-image">
+                        <img src="https://images.unsplash.com/photo-1505761671935-60b3a7427bad" alt="New York">
+                    </div>
+                    <div class="card-content">
+                        <h3 class="card-title">New York</h3>
+                        <p class="card-description">Taste the diverse flavors of the Big Apple</p>
+                        <div class="card-footer">
+                            <span class="card-price">18 Restaurants</span>
+                            <a href="{% url 'dish_list' %}" class="card-button">Explore</a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        
+        <!-- Pied de page -->
+        <footer class="footer">
+            <div class="footer-logo">FoodFlex</div>
+            <p class="footer-text">Your desktop application to discover global gastronomy</p>
+            <div class="social-links">
+                <a href="#" class="social-icon"><i class="fab fa-facebook-f"></i></a>
+                <a href="#" class="social-icon"><i class="fab fa-twitter"></i></a>
+                <a href="#" class="social-icon"><i class="fab fa-instagram"></i></a>
+                <a href="#" class="social-icon"><i class="fab fa-github"></i></a>
+            </div>
+            <p class="copyright">&copy; {% now "Y" %} FoodFlex. All rights reserved.</p>
+        </footer>
+    </div>
+    
+    <!-- Notre script Three.js -->
+    <script src="https://cdn.jsdelivr.net/npm/swiper@10/swiper-bundle.min.js"></script>
+    <script src="{% static 'foodapp/js/threejs-animation.js' %}"></script>
+    <script>
+      var swiper = new Swiper(".mySwiper", {
+        effect: "coverflow",
+        grabCursor: true,
+        centeredSlides: true,
+        slidesPerView: "auto",
+        coverflowEffect: {
+          rotate: 50,
+          stretch: 0,
+          depth: 100,
+          modifier: 1,
+          slideShadows: true,
+        },
+        pagination: {
+          el: ".swiper-pagination",
+          clickable: true,
+        },
+        autoplay: {
+          delay: 3500,
+          disableOnInteraction: false,
+        },
+      });
+    </script>
+</body>
+</html> 

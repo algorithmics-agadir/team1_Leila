@@ -1,0 +1,18 @@
+<div class="home-button-container">
+    <div class="nav-buttons">
+        <a href="{% url 'accueil' %}" class="home-button">
+            <span class="home-icon">🏠</span>
+            Home
+        </a>
+        <a href="{% url 'currency_converter' %}" class="home-button">
+            <span class="home-icon">💱</span>
+            Converter
+        </a>
+        {% if show_back %}
+            <a href="javascript:history.back()" class="home-button">
+                <span class="home-icon">⬅️</span>
+                Back
+            </a>
+        {% endif %}
+    </div>
+</div>

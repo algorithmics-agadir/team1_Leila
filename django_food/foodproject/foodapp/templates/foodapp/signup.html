@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inscription - FoodFlex</title>
+    <!-- Polices -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Bibliothèques -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.22.13/babel.min.js"></script>
+    {% load static %}
+    <style>
+        :root {
+            --primary-color: #FF6B6B;
+            --secondary-color: #4ECDC4;
+            --accent-orange: #FF9F1C;
+            --light-bg: #ffffff;
+            --dark-bg: #121212;
+            --light-gray: #f8f9fa;
+            --text-dark: #2D3748;
+            --text-gray: #718096;
+            --text-light: #f5f5f5;
+            --error-color: #e53e3e;
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
+            --radius: 12px;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        body {
+            background-color: var(--dark-bg);
+            color: var(--text-light);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .scene-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            z-index: -1;
+        }
+        
+        .app-container {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .form-container {
+            width: 100%;
+            max-width: 500px;
+            background-color: rgba(30, 30, 30, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        
+        .form-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-orange));
+            padding: 25px;
+            text-align: center;
+        }
+        
+        .form-logo {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .form-tagline {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .form-body {
+            padding: 30px;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-light);
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius);
+            background-color: rgba(255, 255, 255, 0.05);
+            color: var(--text-light);
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .input-group input:focus {
+            border-color: var(--primary-color);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.2);
+        }
+        
+        .error-message {
+            color: var(--error-color);
+            font-size: 12px;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: var(--radius);
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .btn:hover {
+            background-color: var(--accent-orange);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .form-footer {
+            text-align: center;
+            margin-top: 25px;
+            font-size: 13px;
+            color: var(--text-gray);
+        }
+        
+        .form-footer a {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        
+        .form-footer a:hover {
+            color: var(--accent-orange);
+        }
+        
+        .success-message {
+            text-align: center;
+            padding: 20px;
+            background-color: rgba(46, 213, 115, 0.1);
+            border: 1px solid rgba(46, 213, 115, 0.3);
+            border-radius: var(--radius);
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .success-icon {
+            font-size: 40px;
+            color: var(--secondary-color);
+        }
+        
+        .password-toggle {
+            position: absolute;
+            right: 15px;
+            top: 42px;
+            cursor: pointer;
+            color: var(--text-gray);
+            transition: all 0.2s ease;
+        }
+        
+        .password-toggle:hover {
+            color: var(--text-light);
+        }
+        
+        .food-icon {
+            position: absolute;
+            opacity: 0.8;
+            pointer-events: none;
+        }
+        
+        @media (max-width: 768px) {
+            .form-container {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="scene-container"></div>
+    <div id="app"></div>
+    
+    <script type="text/babel">
+        {% verbatim %}
+        const { useState, useEffect } = React;
+        
+        // Composant principal
+        const App = () => {
+            const [formData, setFormData] = useState({
+                username: '',
+                email: '',
+                password: '',
+                confirmPassword: '',
+            });
+            
+            const [errors, setErrors] = useState({});
+            const [showPassword, setShowPassword] = useState(false);
+            const [isSubmitting, setIsSubmitting] = useState(false);
+            const [isSuccess, setIsSuccess] = useState(false);
+            
+            // Gérer les changements dans le formulaire
+            const handleChange = (e) => {
+                const { name, value } = e.target;
+                setFormData({
+                    ...formData,
+                    [name]: value
+                });
+                
+                // Effacer l'erreur quand l'utilisateur commence à taper
+                if (errors[name]) {
+                    setErrors({
+                        ...errors,
+                        [name]: null
+                    });
+                }
+            };
+            
+            // Valider le formulaire
+            const validateForm = () => {
+                const newErrors = {};
+                
+                // Valider le nom d'utilisateur
+                if (!formData.username.trim()) {
+                    newErrors.username = "Le nom d'utilisateur est requis";
+                } else if (formData.username.length < 3) {
+                    newErrors.username = "Le nom d'utilisateur doit contenir au moins 3 caractères";
+                }
+                
+                // Valider l'email
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!formData.email.trim()) {
+                    newErrors.email = "L'email est requis";
+                } else if (!emailRegex.test(formData.email)) {
+                    newErrors.email = "Veuillez entrer une adresse email valide";
+                }
+                
+                // Valider le mot de passe
+                if (!formData.password) {
+                    newErrors.password = "Le mot de passe est requis";
+                } else if (formData.password.length < 6) {
+                    newErrors.password = "Le mot de passe doit contenir au moins 6 caractères";
+                }
+                
+                // Valider la confirmation du mot de passe
+                if (formData.password !== formData.confirmPassword) {
+                    newErrors.confirmPassword = "Les mots de passe ne correspondent pas";
+                }
+                
+                return newErrors;
+            };
+            
+            // Gérer la soumission du formulaire
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                
+                const formErrors = validateForm();
+                if (Object.keys(formErrors).length > 0) {
+                    setErrors(formErrors);
+                    return;
+                }
+                
+                setIsSubmitting(true);
+                
+                try {
+                    // Récupérer le token CSRF depuis les cookies
+                    const csrftoken = getCookie('csrftoken');
+                    
+                    const response = await fetch('/signup/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrftoken
+                        },
+                        body: JSON.stringify({
+                            username: formData.username,
+                            email: formData.email,
+                            password: formData.password
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        // Inscription réussie
+                        setIsSuccess(true);
+                        // Rediriger après 2 secondes
+                        setTimeout(() => {
+                            window.location.href = '/login/';
+                        }, 2000);
+                    } else {
+                        // Gérer les erreurs de la réponse
+                        const errorData = await response.json();
+                        setErrors(errorData.errors || { general: "Une erreur s'est produite" });
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    setErrors({ general: "Une erreur de connexion s'est produite" });
+                } finally {
+                    setIsSubmitting(false);
+                }
+            };
+            
+            // Fonction pour récupérer les cookies (pour le token CSRF)
+            const getCookie = (name) => {
+                let cookieValue = null;
+                if (document.cookie && document.cookie !== '') {
+                    const cookies = document.cookie.split(';');
+                    for (let i = 0; i < cookies.length; i++) {
+                        const cookie = cookies[i].trim();
+                        // Est-ce que ce cookie commence par le nom qu'on cherche?
+                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                            break;
+                        }
+                    }
+                }
+                return cookieValue;
+            };
+            
+            // Initialiser les animations GSAP et Three.js après le rendu
+            useEffect(() => {
+                // Animation GSAP pour le formulaire
+                gsap.to('.form-container', {
+                    opacity: 1,
+                    y: 0,
+                    duration: 0.8,
+                    ease: 'power3.out'
+                });
+                
+                // Initialiser la scène Three.js
+                initThreeScene();
+                
+                return () => {
+                    // Nettoyer la scène Three.js si nécessaire
+                };
+            }, []);
+            
+            // Fonction pour initialiser la scène Three.js
+            const initThreeScene = () => {
+                const container = document.querySelector('.scene-container');
+                const scene = new THREE.Scene();
+                const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+                camera.position.z = 20;
+                
+                const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                renderer.setClearColor(0x000000, 0);
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                container.appendChild(renderer.domElement);
+                
+                // Lumières
+                const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+                scene.add(ambientLight);
+                
+                const pointLight = new THREE.PointLight(0xffffff, 1);
+                pointLight.position.set(10, 10, 10);
+                scene.add(pointLight);
+                
+                // Créer des objets alimentaires flottants en arrière-plan
+                const foodObjects = [];
+                const foodCount = 15;
+                
+                // Fonction pour créer un objet alimentaire simple
+                const createFoodObject = () => {
+                    const geometry = new THREE.SphereGeometry(Math.random() * 0.5 + 0.5, 32, 32);
+                    const material = new THREE.MeshStandardMaterial({
+                        color: new THREE.Color(
+                            Math.random() * 0.5 + 0.5,
+                            Math.random() * 0.5 + 0.5,
+                            Math.random() * 0.5
+                        ),
+                        roughness: 0.8,
+                        metalness: 0.2
+                    });
+                    
+                    const food = new THREE.Mesh(geometry, material);
+                    
+                    // Position aléatoire
+                    food.position.x = (Math.random() - 0.5) * 40;
+                    food.position.y = (Math.random() - 0.5) * 40;
+                    food.position.z = (Math.random() - 0.5) * 20 - 10;
+                    
+                    // Rotation aléatoire
+                    food.rotation.x = Math.random() * Math.PI;
+                    food.rotation.y = Math.random() * Math.PI;
+                    
+                    // Vitesse de rotation aléatoire
+                    food.userData = {
+                        rotationSpeed: {
+                            x: (Math.random() - 0.5) * 0.02,
+                            y: (Math.random() - 0.5) * 0.02,
+                            z: (Math.random() - 0.5) * 0.02
+                        },
+                        floatSpeed: Math.random() * 0.01 + 0.005,
+                        floatOffset: Math.random() * Math.PI * 2
+                    };
+                    
+                    scene.add(food);
+                    return food;
+                };
+                
+                // Créer plusieurs objets alimentaires
+                for (let i = 0; i < foodCount; i++) {
+                    foodObjects.push(createFoodObject());
+                }
+                
+                // Animation
+                const animate = () => {
+                    requestAnimationFrame(animate);
+                    
+                    // Animer chaque objet alimentaire
+                    foodObjects.forEach(food => {
+                        // Rotation
+                        food.rotation.x += food.userData.rotationSpeed.x;
+                        food.rotation.y += food.userData.rotationSpeed.y;
+                        food.rotation.z += food.userData.rotationSpeed.z;
+                        
+                        // Flottement
+                        food.position.y += Math.sin(Date.now() * 0.001 + food.userData.floatOffset) * food.userData.floatSpeed;
+                    });
+                    
+                    renderer.render(scene, camera);
+                };
+                
+                // Gérer le redimensionnement de la fenêtre
+                const handleResize = () => {
+                    camera.aspect = window.innerWidth / window.innerHeight;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                };
+                
+                window.addEventListener('resize', handleResize);
+                
+                // Démarrer l'animation
+                animate();
+            };
+            
+            return (
+                <div className="app-container">
+                    <div className="form-container">
+                        {isSuccess ? (
+                            <div className="form-body">
+                                <div className="success-message">
+                                    <div className="success-icon">✓</div>
+                                    <h3>Inscription réussie!</h3>
+                                    <p>Vous allez être redirigé vers la page de connexion...</p>
+                                </div>
+                                <div className="form-footer">
+                                    <a href="/login/">Aller à la page de connexion</a>
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                <div className="form-header">
+                                    <div className="form-logo">
+                                        <span>🍽️</span>
+                                        <span>FoodFlex</span>
+                                    </div>
+                                    <div className="form-tagline">Créez votre compte pour découvrir la cuisine marocaine</div>
+                                </div>
+                                
+                                <div className="form-body">
+                                    {errors.general && (
+                                        <div className="error-message">{errors.general}</div>
+                                    )}
+                                    
+                                    <form onSubmit={handleSubmit}>
+                                        <input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}" />
+                                        
+                                        <div className="input-group">
+                                            <label htmlFor="username">Nom d'utilisateur</label>
+                                            <input
+                                                type="text"
+                                                id="username"
+                                                name="username"
+                                                value={formData.username}
+                                                onChange={handleChange}
+                                                placeholder="Entrez votre nom d'utilisateur"
+                                            />
+                                            {errors.username && (
+                                                <div className="error-message">⚠️ {errors.username}</div>
+                                            )}
+                                        </div>
+                                        
+                                        <div className="input-group">
+                                            <label htmlFor="email">Email</label>
+                                            <input
+                                                type="email"
+                                                id="email"
+                                                name="email"
+                                                value={formData.email}
+                                                onChange={handleChange}
+                                                placeholder="Entrez votre adresse email"
+                                            />
+                                            {errors.email && (
+                                                <div className="error-message">⚠️ {errors.email}</div>
+                                            )}
+                                        </div>
+                                        
+                                        <div className="input-group">
+                                            <label htmlFor="password">Mot de passe</label>
+                                            <input
+                                                type={showPassword ? "text" : "password"}
+                                                id="password"
+                                                name="password"
+                                                value={formData.password}
+                                                onChange={handleChange}
+                                                placeholder="Créez un mot de passe"
+                                            />
+                                            <div 
+                                                className="password-toggle"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                            >
+                                                {showPassword ? "🙈" : "👁️"}
+                                            </div>
+                                            {errors.password && (
+                                                <div className="error-message">⚠️ {errors.password}</div>
+                                            )}
+                                        </div>
+                                        
+                                        <div className="input-group">
+                                            <label htmlFor="confirmPassword">Confirmer le mot de passe</label>
+                                            <input
+                                                type={showPassword ? "text" : "password"}
+                                                id="confirmPassword"
+                                                name="confirmPassword"
+                                                value={formData.confirmPassword}
+                                                onChange={handleChange}
+                                                placeholder="Confirmez votre mot de passe"
+                                            />
+                                            {errors.confirmPassword && (
+                                                <div className="error-message">⚠️ {errors.confirmPassword}</div>
+                                            )}
+                                        </div>
+                                        
+                                        <button type="submit" className="btn" disabled={isSubmitting}>
+                                            {isSubmitting ? "Inscription en cours..." : "S'inscrire"}
+                                        </button>
+                                    </form>
+                                    
+                                    <div className="form-footer">
+                                        <p>Déjà un compte? <a href="/login/">Se connecter</a></p>
+                                        <p style={{ marginTop: "10px" }}>
+                                            <a href="{% url 'index' %}">
+                                                Retour à l'accueil
+                                            </a>
+                                        </p>
+                                    </div>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+        
+        // Rendu du composant principal
+        ReactDOM.render(<App />, document.getElementById('app'));
+        {% endverbatim %}
+    </script>
+</body>
+</html> 

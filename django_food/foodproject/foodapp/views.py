@@ -8,7 +8,22 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count
+from django.contrib.auth import authenticate, login, logout
+from django.http import JsonResponse
+import json
+from django.urls import reverse
+from django.shortcuts import redirect
+from django.middleware.csrf import get_token
+from django.core.cache import cache
+from django.utils import timezone
+import time
 
+try:
+    from cpp_modules.food_processor import fast_sort_dishes
+    USE_CPP_OPTIMIZATION = True
+except ImportError:
+    USE_CPP_OPTIMIZATION = False
+    print("Module C++ non disponible, utilisation du tri Python standard")
 
 def index(request):
     return render(request, 'foodapp/page_main.html')
@@ -30,36 +45,50 @@ class CityListView(ListView):
     context_object_name = 'cities'
 
 def dish_list(request):
-    form = DishFilterForm(request.GET or None)
     dishes = Dish.objects.all()
-    selected_city = None
+    sort_by = request.GET.get('sort', 'name')
+    city_id = request.GET.get('city')
 
-    if form.is_valid():
-        if form.cleaned_data.get('city'):
-            selected_city = City.objects.get(id=form.cleaned_data['city'].id)
-            dishes = dishes.filter(city=selected_city)
-        if form.cleaned_data.get('type'):
-            dishes = dishes.filter(type=form.cleaned_data['type'])
-        if form.cleaned_data.get('is_vegetarian'):
-            dishes = dishes.filter(is_vegetarian=True)
-        if form.cleaned_data.get('is_vegan'):
-            dishes = dishes.filter(is_vegan=True)
-        if form.cleaned_data.get('price_range'):
-            dishes = dishes.filter(price_range__in=form.cleaned_data['price_range'])
+    if city_id:
+        dishes = dishes.filter(city_id=city_id)
 
-        # Filtrer les plats selon les restrictions de santé
-        if form.cleaned_data.get('bad_for_cholesterol'):  # Si l'utilisateur a des problèmes de cholestérol
-            dishes = dishes.filter(bad_for_cholesterol=False)  # Garder uniquement les plats sûrs
-        if form.cleaned_data.get('bad_for_sugar'):  # Si l'utilisateur est diabétique
-            dishes = dishes.filter(bad_for_sugar=False)  # Garder uniquement les plats sûrs
-        if form.cleaned_data.get('bad_for_lactose'):  # Si l'utilisateur est intolérant au lactose
-            dishes = dishes.filter(bad_for_lactose=False)  # Garder uniquement les plats sûrs
+    if USE_CPP_OPTIMIZATION:
+        # Convertir les plats en format compatible avec le module C++
+        dishes_data = [
+            {
+                'id': dish.id,
+                'name': dish.name,
+                'price_range': dish.price_range,
+                'type': dish.type,
+                'city_id': dish.city.id if dish.city else 0
+            }
+            for dish in dishes
+        ]
+        
+        # Utiliser le tri rapide C++
+        sorted_dishes = fast_sort_dishes(dishes_data, sort_by)
+        
+        # Reconvertir en QuerySet Django
+        dish_ids = [dish['id'] for dish in sorted_dishes]
+        dishes = Dish.objects.filter(id__in=dish_ids)
+        # Préserver l'ordre du tri C++
+        dishes = sorted(dishes, key=lambda x: dish_ids.index(x.id))
+    else:
+        # Tri Python standard
+        if sort_by == 'price_asc':
+            dishes = dishes.order_by('price_range')
+        elif sort_by == 'price_desc':
+            dishes = dishes.order_by('-price_range')
+        elif sort_by == 'name':
+            dishes = dishes.order_by('name')
 
     context = {
-        'form': form,
         'dishes': dishes,
-        'selected_city': selected_city
+        'current_sort': sort_by,
+        'cities': City.objects.all(),
+        'selected_city': city_id
     }
+    
     return render(request, 'foodapp/dish_list.html', context)
 
 
@@ -90,21 +119,113 @@ def restaurants(request):
     return render(request, 'foodapp/modern_restaurants.html', context)
 
 def get_dishes(request):
-    dishes = Dish.objects.all()
-    data = []
-    for dish in dishes:
-        data.append({
-            'id': dish.id,
-            'name': dish.name,
-            'description': dish.description,
-            'price': dish.price,
-            'image': dish.image.url if dish.image else '',
-            'city': {
-                'id': dish.city.id,
-                'name': dish.city.name
-            }
-        })
-    return JsonResponse(data, safe=False)
+    """
+    Vue API optimisée pour renvoyer les plats avec mise en cache
+    """
+    # Vérifier si les données sont en cache
+    cache_key = 'all_dishes_data'
+    dishes_data = cache.get(cache_key)
+    
+    if not dishes_data:
+        # Si pas en cache, récupérer depuis la base de données
+        start_time = time.time()
+        dishes = Dish.objects.select_related('city').all()
+        
+        # Préparer les données pour la sérialisation JSON
+        dishes_data = []
+        for dish in dishes:
+            dishes_data.append({
+                'id': dish.id,
+                'name': dish.name,
+                'description': dish.description,
+                'price_range': dish.price_range,
+                'price_display': dish.get_price_range_display(),
+                'type': dish.type,
+                'type_display': dish.get_type_display(),
+                'image': dish.image.url if dish.image else '',
+                'is_vegetarian': dish.is_vegetarian,
+                'is_vegan': dish.is_vegan,
+                'ingredients': dish.ingredients,
+                'history': dish.history,
+                'preparation_steps': dish.preparation_steps,
+                'city': {
+                    'id': dish.city.id if dish.city else None,
+                    'name': dish.city.name if dish.city else None
+                },
+                'timestamp': timezone.now().timestamp()  # Ajouter un horodatage pour le suivi
+            })
+        
+        # Mettre en cache pour 10 minutes
+        cache.set(cache_key, dishes_data, 60 * 10)
+        
+        print(f"Database query completed in {time.time() - start_time:.4f} seconds")
+    
+    return JsonResponse(dishes_data, safe=False)
+
+def get_restaurants(request):
+    """
+    Vue API pour renvoyer les restaurants avec mise en cache
+    """
+    # Vérifier si les données sont en cache
+    cache_key = 'all_restaurants_data'
+    restaurants_data = cache.get(cache_key)
+    
+    if not restaurants_data:
+        # Si pas en cache, récupérer depuis la base de données
+        start_time = time.time()
+        restaurants = Restaurant.objects.select_related('city').all()
+        
+        # Préparer les données pour la sérialisation JSON
+        restaurants_data = []
+        for restaurant in restaurants:
+            restaurants_data.append({
+                'id': restaurant.id,
+                'name': restaurant.name,
+                'description': restaurant.description,
+                'is_open': restaurant.is_open,
+                'address': restaurant.address,
+                'phone': restaurant.phone,
+                'email': restaurant.email,
+                'website': restaurant.website,
+                'image': restaurant.image.url if restaurant.image else '',
+                'city': {
+                    'id': restaurant.city.id,
+                    'name': restaurant.city.name
+                },
+                'timestamp': timezone.now().timestamp()
+            })
+        
+        # Mettre en cache pour 10 minutes
+        cache.set(cache_key, restaurants_data, 60 * 10)
+        
+        print(f"Restaurant query completed in {time.time() - start_time:.4f} seconds")
+    
+    return JsonResponse(restaurants_data, safe=False)
+
+def moroccan_cuisine(request):
+    """
+    Vue spéciale pour montrer les plats marocains aux touristes
+    """
+    # Récupérer les plats marocains recommandés aux touristes
+    recommended_dishes = Dish.objects.filter(origin=Dish.MOROCCAN, is_tourist_recommended=True)
+    
+    # Tous les plats marocains
+    all_moroccan_dishes = Dish.objects.filter(origin=Dish.MOROCCAN)
+    
+    # Répartir les plats par type
+    sweet_dishes = all_moroccan_dishes.filter(type=Dish.SWEET)
+    salty_dishes = all_moroccan_dishes.filter(type=Dish.SALTY)
+    drinks = all_moroccan_dishes.filter(type=Dish.DRINK)
+    
+    context = {
+        'recommended_dishes': recommended_dishes,
+        'sweet_dishes': sweet_dishes,
+        'salty_dishes': salty_dishes,
+        'drinks': drinks,
+        'total_dishes': all_moroccan_dishes.count(),
+    }
+    
+    return render(request, 'foodapp/moroccan_cuisine.html', context)
 
 @csrf_exempt
 def dish_detail(request, dish_id):
@@ -222,3 +343,175 @@ def dashboard(request):
     }
     
     return render(request, 'foodapp/dashboard.html', context)
+
+@csrf_exempt
+def signup_view(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            username = data.get('username')
+            email = data.get('email')
+            password = data.get('password')
+            
+            # Vérifier si l'utilisateur existe déjà
+            if User.objects.filter(username=username).exists():
+                return JsonResponse({'errors': {'username': "Ce nom d'utilisateur est déjà pris"}}, status=400)
+            
+            if User.objects.filter(email=email).exists():
+                return JsonResponse({'errors': {'email': "Cette adresse email est déjà utilisée"}}, status=400)
+            
+            # Créer un nouvel utilisateur
+            user = User.objects.create_user(username=username, email=email, password=password)
+            user.save()
+            
+            # Connecter l'utilisateur
+            login(request, user)
+            
+            return JsonResponse({'success': True}, status=201)
+        except Exception as e:
+            return JsonResponse({'errors': {'general': str(e)}}, status=400)
+    else:
+        # Assurer que le token CSRF est généré
+        csrf_token = get_token(request)
+        return render(request, 'foodapp/signup.html')
+
+@csrf_exempt
+def login_view(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            username = data.get('username')
+            password = data.get('password')
+            remember = data.get('remember', False)
+            
+            user = authenticate(request, username=username, password=password)
+            
+            if user is not None:
+                login(request, user)
+                
+                # Si "remember me" n'est pas coché, le cookie de session expirera à la fermeture du navigateur
+                if not remember:
+                    request.session.set_expiry(0)
+                
+                # Vérifier si c'est un compte restaurant et rediriger en conséquence
+                try:
+                    if hasattr(user, 'restaurant_account') and user.restaurant_account.is_active:
+                        # C'est un compte restaurant actif
+                        return JsonResponse({
+                            'success': True, 
+                            'redirect': reverse('restaurant_dashboard'),
+                            'account_type': 'restaurant'
+                        }, status=200)
+                except:
+                    pass
+                
+                # Compte utilisateur normal
+                return JsonResponse({
+                    'success': True,
+                    'account_type': 'user'
+                }, status=200)
+            else:
+                return JsonResponse({'errors': {'general': "Nom d'utilisateur ou mot de passe incorrect"}}, status=401)
+        except Exception as e:
+            return JsonResponse({'errors': {'general': str(e)}}, status=400)
+    else:
+        # Assurer que le token CSRF est généré
+        csrf_token = get_token(request)
+        return render(request, 'foodapp/login.html')
+
+def logout_view(request):
+    logout(request)
+    return redirect('index')
+
+@login_required
+def restaurant_dashboard(request):
+    """Tableau de bord spécifique pour les comptes restaurants"""
+    
+    # Vérifier si l'utilisateur a bien un compte restaurant associé
+    try:
+        restaurant_account = request.user.restaurant_account
+        if not restaurant_account.is_active:
+            return redirect('index')
+    except:
+        # Si l'utilisateur n'a pas de compte restaurant associé, le rediriger vers l'accueil
+        return redirect('index')
+    
+    # Récupérer le restaurant associé à ce compte
+    restaurant = restaurant_account.restaurant
+    
+    # Récupérer les réservations de ce restaurant
+    # Filtrer par statut si demandé
+    status_filter = request.GET.get('status', None)
+    date_filter = request.GET.get('date', None)
+    
+    reservations = Reservation.objects.filter(restaurant=restaurant).order_by('-date', '-time')
+    
+    if status_filter:
+        reservations = reservations.filter(status=status_filter)
+    
+    if date_filter:
+        reservations = reservations.filter(date=date_filter)
+    
+    # Statistiques
+    total_reservations = Reservation.objects.filter(restaurant=restaurant).count()
+    pending_reservations = Reservation.objects.filter(restaurant=restaurant, status=Reservation.STATUS_PENDING).count()
+    confirmed_reservations = Reservation.objects.filter(restaurant=restaurant, status=Reservation.STATUS_CONFIRMED).count()
+    canceled_reservations = Reservation.objects.filter(restaurant=restaurant, status=Reservation.STATUS_CANCELED).count()
+    
+    # Réservations pour aujourd'hui
+    today = timezone.now().date()
+    today_reservations = Reservation.objects.filter(restaurant=restaurant, date=today).order_by('time')
+    
+    context = {
+        'restaurant': restaurant,
+        'account': restaurant_account,
+        'reservations': reservations,
+        'today_reservations': today_reservations,
+        'total_reservations': total_reservations,
+        'pending_reservations': pending_reservations,
+        'confirmed_reservations': confirmed_reservations,
+        'canceled_reservations': canceled_reservations,
+        'status_filter': status_filter,
+        'date_filter': date_filter,
+    }
+    
+    return render(request, 'foodapp/restaurant_dashboard.html', context)
+
+@login_required
+@csrf_exempt
+def update_reservation_status(request, reservation_id):
+    """API pour mettre à jour le statut d'une réservation depuis le tableau de bord restaurant"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Méthode non autorisée'}, status=405)
+    
+    # Vérifier que l'utilisateur est bien un compte restaurant
+    try:
+        restaurant_account = request.user.restaurant_account
+        if not restaurant_account.is_active:
+            return JsonResponse({'error': 'Accès non autorisé'}, status=403)
+    except:
+        return JsonResponse({'error': 'Accès non autorisé'}, status=403)
+    
+    # Récupérer la réservation
+    try:
+        reservation = Reservation.objects.get(id=reservation_id, restaurant=restaurant_account.restaurant)
+    except Reservation.DoesNotExist:
+        return JsonResponse({'error': 'Réservation non trouvée'}, status=404)
+    
+    # Mettre à jour le statut
+    try:
+        data = json.loads(request.body)
+        new_status = data.get('status')
+        if new_status in [s[0] for s in Reservation.STATUS_CHOICES]:
+            reservation.status = new_status
+            reservation.save()
+            return JsonResponse({
+                'success': True, 
+                'reservation_id': reservation.id,
+                'status': reservation.status,
+                'status_display': reservation.get_status_display()
+            })
+        else:
+            return JsonResponse({'error': 'Statut invalide'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)

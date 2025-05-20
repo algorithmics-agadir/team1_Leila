@@ -1,80 +1,123 @@
 from django.contrib import admin
-from .models import Restaurant, City, Dish, Reservation
+from .models import City, Dish, Restaurant, Reservation, RestaurantAccount
+from django.utils.html import format_html
+from django.contrib.auth.models import User
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
-class RestaurantAdmin(admin.ModelAdmin):
-    list_display = ('name', 'city', 'phone', 'email', 'is_open', 'created_at')
-    list_filter = ('is_open', 'city')
-    search_fields = ('name', 'address', 'email', 'phone')
-    date_hierarchy = 'created_at'
-    list_editable = ('is_open',)
-    list_per_page = 25
-    fieldsets = (
-        ('Informations générales', {
-            'fields': ('name', 'city', 'description', 'image')
-        }),
-        ('Coordonnées', {
-            'fields': ('address', 'phone', 'email', 'website')
-        }),
-        ('Statut', {
-            'fields': ('is_open',)
-        }),
-    )
+# Register your models here.
+class DishInline(admin.TabularInline):
+    model = Dish
+    extra = 0
 
 class CityAdmin(admin.ModelAdmin):
-    list_display = ('name', 'description', 'get_restaurants_count', 'get_dishes_count')
-    search_fields = ('name', 'description')
-    
-    def get_restaurants_count(self, obj):
-        return obj.restaurants.count()
-    get_restaurants_count.short_description = 'Restaurants'
+    list_display = ('name', 'get_image', 'get_dishes_count', 'get_restaurants_count')
+    search_fields = ('name',)
+    inlines = [DishInline]
     
     def get_dishes_count(self, obj):
         return obj.dishes.count()
-    get_dishes_count.short_description = 'Plats'
+    get_dishes_count.short_description = "Nombre de plats"
+    
+    def get_restaurants_count(self, obj):
+        return obj.restaurants.count()
+    get_restaurants_count.short_description = "Nombre de restaurants"
+    
+    def get_image(self, obj):
+        if obj.image:
+            return format_html('<img src="{}" width="50" height="50" style="border-radius: 50%;" />', obj.image.url)
+        return format_html('<span>Pas d\'image</span>')
+    get_image.short_description = "Image"
 
 class DishAdmin(admin.ModelAdmin):
-    list_display = ('name', 'city', 'type', 'price_range', 'is_vegetarian', 'is_vegan')
-    list_filter = ('type', 'city', 'price_range', 'is_vegetarian', 'is_vegan', 'bad_for_cholesterol', 'bad_for_sugar', 'bad_for_lactose')
-    search_fields = ('name', 'description', 'ingredients')
-    list_editable = ('price_range', 'is_vegetarian', 'is_vegan')
+    list_display = ('name', 'city', 'type', 'origin', 'price_range', 'is_vegetarian', 'is_vegan', 'get_image')
+    list_filter = ('city', 'type', 'origin', 'price_range', 'is_vegetarian', 'is_vegan', 'is_tourist_recommended')
+    search_fields = ('name', 'description')
+    
     fieldsets = (
-        ('Informations générales', {
-            'fields': ('name', 'city', 'type', 'description', 'image')
+        ('Informations de base', {
+            'fields': ('name', 'city', 'type', 'origin', 'price_range', 'description', 'image')
         }),
-        ('Caractéristiques', {
-            'fields': ('price_range', 'ingredients', 'history', 'preparation_steps')
+        ('Caractéristiques diététiques', {
+            'fields': ('bad_for_cholesterol', 'bad_for_sugar', 'bad_for_lactose', 'is_vegetarian', 'is_vegan'),
+            'classes': ('collapse',),
         }),
-        ('Restrictions alimentaires', {
-            'fields': ('is_vegetarian', 'is_vegan', 'bad_for_cholesterol', 'bad_for_sugar', 'bad_for_lactose'),
+        ('Pour les touristes', {
+            'fields': ('is_tourist_recommended', 'cultural_notes'),
+            'classes': ('collapse',),
+        }),
+        ('Détails culinaires', {
+            'fields': ('ingredients', 'history', 'preparation_steps'),
             'classes': ('collapse',),
         }),
     )
+    
+    def get_image(self, obj):
+        if obj.image:
+            return format_html('<img src="{}" width="50" height="50" />', obj.image.url)
+        return format_html('<span>Pas d\'image</span>')
+    get_image.short_description = "Image"
+
+class RestaurantAdmin(admin.ModelAdmin):
+    list_display = ('name', 'city', 'is_open', 'phone', 'email', 'get_image', 'has_account')
+    list_filter = ('city', 'is_open')
+    search_fields = ('name', 'address', 'description')
+    
+    def get_image(self, obj):
+        if obj.image:
+            return format_html('<img src="{}" width="50" height="50" style="border-radius: 5px;" />', obj.image.url)
+        return format_html('<span>Pas d\'image</span>')
+    get_image.short_description = "Image"
+    
+    def has_account(self, obj):
+        try:
+            return bool(obj.account)
+        except:
+            return False
+    has_account.boolean = True
+    has_account.short_description = "Compte actif"
 
 class ReservationAdmin(admin.ModelAdmin):
     list_display = ('id', 'restaurant', 'name', 'date', 'time', 'guests', 'status', 'created_at')
-    list_filter = ('status', 'date', 'restaurant')
-    search_fields = ('name', 'email', 'phone')
+    list_filter = ('restaurant', 'date', 'status')
+    search_fields = ('name', 'email', 'notes')
     date_hierarchy = 'date'
-    list_editable = ('status',)
-    list_per_page = 25
-    readonly_fields = ('created_at', 'updated_at')
-    fieldsets = (
-        ('Informations de réservation', {
-            'fields': ('restaurant', 'date', 'time', 'guests', 'status')
-        }),
-        ('Informations du client', {
-            'fields': ('user', 'name', 'email', 'phone')
-        }),
-        ('Notes et suivi', {
-            'fields': ('notes', 'created_at', 'updated_at')
-        }),
-    )
 
-# Enregistrer les modèles dans l'admin
-admin.site.register(Restaurant, RestaurantAdmin)
+# Personnalisation pour ajouter le lien entre User et RestaurantAccount
+class RestaurantAccountInline(admin.StackedInline):
+    model = RestaurantAccount
+    can_delete = False
+    verbose_name_plural = 'Compte restaurant'
+
+# Étendre l'admin User standard pour inclure RestaurantAccount
+class UserAdmin(BaseUserAdmin):
+    inlines = (RestaurantAccountInline, )
+    list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff', 'is_restaurant')
+    
+    def is_restaurant(self, obj):
+        try:
+            return bool(obj.restaurant_account)
+        except:
+            return False
+    is_restaurant.boolean = True
+    is_restaurant.short_description = "Restaurant"
+
+# Class Admin pour RestaurantAccount
+class RestaurantAccountAdmin(admin.ModelAdmin):
+    list_display = ('user', 'restaurant', 'is_manager', 'is_active', 'created_at', 'last_login')
+    list_filter = ('is_manager', 'is_active')
+    search_fields = ('user__username', 'restaurant__name')
+    raw_id_fields = ('user', 'restaurant')
+
+# Désinscrire le modèle User d'origine
+admin.site.unregister(User)
+
+# Enregistrer les modèles avec leurs classes Admin
+admin.site.register(User, UserAdmin)
 admin.site.register(City, CityAdmin)
 admin.site.register(Dish, DishAdmin)
+admin.site.register(Restaurant, RestaurantAdmin)
 admin.site.register(Reservation, ReservationAdmin)
+admin.site.register(RestaurantAccount, RestaurantAccountAdmin)
 
 # Personnaliser l'interface d'administration
 admin.site.site_header = "FoodFlex Administration"

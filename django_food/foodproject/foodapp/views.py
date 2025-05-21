@@ -1,22 +1,24 @@
 from django.views.generic import ListView
-from django.shortcuts import render, get_object_or_404
-from django.http import JsonResponse
-from .models import City, Dish, Restaurant, Reservation
-from .forms import DishFilterForm, CurrencyConverterForm, ReservationForm
+from django.shortcuts import render, get_object_or_404, redirect
+from django.http import JsonResponse, HttpResponseForbidden
+from .models import City, Dish, Restaurant, Reservation, RestaurantAccount, UserProfile, ForumTopic, ForumMessage
+from .forms import DishFilterForm, CurrencyConverterForm, ReservationForm, ReservationModifyForm
 from decimal import Decimal
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count
+from django.db.models import Count, Q, Sum
 from django.contrib.auth import authenticate, login, logout
 from django.http import JsonResponse
 import json
+import datetime
 from django.urls import reverse
 from django.shortcuts import redirect
 from django.middleware.csrf import get_token
 from django.core.cache import cache
 from django.utils import timezone
 import time
+from django.contrib import messages
 
 try:
     from cpp_modules.food_processor import fast_sort_dishes
@@ -26,7 +28,7 @@ except ImportError:
     print("Module C++ non disponible, utilisation du tri Python standard")
 
 def index(request):
-    return render(request, 'foodapp/page_main.html')
+    return redirect('accueil')
 
 def accueil(request):
     featured_dishes = Dish.objects.all().order_by('?')[:5]
@@ -202,6 +204,19 @@ def get_restaurants(request):
     
     return JsonResponse(restaurants_data, safe=False)
 
+@csrf_exempt
+@login_required
+def mark_dish_viewed(request, dish_id):
+    """API pour marquer un plat comme vu par l'utilisateur"""
+    if request.method == 'POST':
+        try:
+            dish = get_object_or_404(Dish, id=dish_id)
+            dish.mark_as_viewed(request.user)
+            return JsonResponse({'success': True})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    return JsonResponse({'error': 'Méthode non autorisée'}, status=405)
+
 def moroccan_cuisine(request):
     """
     Vue spéciale pour montrer les plats marocains aux touristes
@@ -216,6 +231,14 @@ def moroccan_cuisine(request):
     sweet_dishes = all_moroccan_dishes.filter(type=Dish.SWEET)
     salty_dishes = all_moroccan_dishes.filter(type=Dish.SALTY)
     drinks = all_moroccan_dishes.filter(type=Dish.DRINK)
+    
+    # Marquer les plats comme nouveaux pour cet utilisateur
+    if request.user.is_authenticated:
+        for dish in list(recommended_dishes) + list(sweet_dishes) + list(salty_dishes) + list(drinks):
+            dish.is_new_for_current_user = dish.is_new_for_user(request.user)
+    else:
+        for dish in list(recommended_dishes) + list(sweet_dishes) + list(salty_dishes) + list(drinks):
+            dish.is_new_for_current_user = dish.is_new()
     
     context = {
         'recommended_dishes': recommended_dishes,
@@ -274,31 +297,45 @@ def restaurant_detail(request, restaurant_id):
 def reservation(request, restaurant_id):
     restaurant = get_object_or_404(Restaurant, id=restaurant_id)
     success = False
-    reservation = None
+    reservation_obj = None
     
     if request.method == 'POST':
         form = ReservationForm(request.POST)
         if form.is_valid():
-            reservation = form.save(commit=False)
-            reservation.restaurant = restaurant
-            if request.user.is_authenticated:
-                reservation.user = request.user
-            reservation.save()
-            success = True
+            # Vérifier la disponibilité
+            date = form.cleaned_data['date']
+            time = form.cleaned_data['time']
+            guests = form.cleaned_data['guests']
+            
+            # Vérifier si le créneau est disponible
+            if is_slot_available(restaurant, date, time, guests):
+                reservation_obj = form.save(commit=False)
+                reservation_obj.restaurant = restaurant
+                if request.user.is_authenticated:
+                    reservation_obj.user = request.user
+                reservation_obj.save()
+                success = True
+            else:
+                form.add_error(None, "Désolé, ce créneau n'est plus disponible. Veuillez choisir un autre horaire.")
     else:
         initial_data = {}
         if request.user.is_authenticated:
             initial_data = {
-                'name': request.user.get_full_name(),
-                'email': request.user.email
+                'name': request.user.get_full_name() or request.user.username,
+                'email': request.user.email,
+                'phone': getattr(request.user.profile, 'phone', '') if hasattr(request.user, 'profile') else ''
             }
         form = ReservationForm(initial=initial_data)
+    
+    # Récupérer les créneaux disponibles pour JavaScript
+    available_dates = get_available_dates(restaurant)
     
     context = {
         'restaurant': restaurant,
         'form': form,
         'success': success,
-        'reservation': reservation
+        'reservation': reservation_obj,
+        'available_dates': json.dumps([date.strftime('%Y-%m-%d') for date in available_dates])
     }
     
     return render(request, 'foodapp/reservation.html', context)
@@ -352,6 +389,7 @@ def signup_view(request):
             username = data.get('username')
             email = data.get('email')
             password = data.get('password')
+            account_type = data.get('account_type', 'user')
             
             # Vérifier si l'utilisateur existe déjà
             if User.objects.filter(username=username).exists():
@@ -364,25 +402,72 @@ def signup_view(request):
             user = User.objects.create_user(username=username, email=email, password=password)
             user.save()
             
+            # Créer un profil utilisateur standard dans tous les cas
+            UserProfile.objects.create(user=user)
+            
+            # Si c'est un compte restaurant, créer également un RestaurantAccount
+            if account_type == 'restaurant':
+                restaurant_name = data.get('restaurant_name')
+                restaurant_city_id = data.get('restaurant_city')
+                restaurant_phone = data.get('restaurant_phone')
+                restaurant_address = data.get('restaurant_address')
+                
+                # Vérifier que toutes les données restaurant sont fournies
+                if not restaurant_name or not restaurant_city_id or not restaurant_phone or not restaurant_address:
+                    return JsonResponse({'errors': {'general': "Informations du restaurant incomplètes"}}, status=400)
+                
+                try:
+                    city = City.objects.get(id=restaurant_city_id)
+                    
+                    # Créer le restaurant
+                    restaurant = Restaurant.objects.create(
+                        name=restaurant_name,
+                        city=city,
+                        address=restaurant_address,
+                        phone=restaurant_phone,
+                        email=email,
+                        is_open=True
+                    )
+                    
+                    # Associer le compte restaurant à l'utilisateur
+                    RestaurantAccount.objects.create(
+                        user=user,
+                        restaurant=restaurant,
+                        is_active=True
+                    )
+                except City.DoesNotExist:
+                    return JsonResponse({'errors': {'restaurant_city': "Ville non trouvée"}}, status=400)
+                except Exception as e:
+                    return JsonResponse({'errors': {'general': f"Erreur lors de la création du restaurant: {str(e)}"}}, status=400)
+            
             # Connecter l'utilisateur
             login(request, user)
             
-            return JsonResponse({'success': True}, status=201)
+            return JsonResponse({'success': True, 'account_type': account_type}, status=201)
         except Exception as e:
             return JsonResponse({'errors': {'general': str(e)}}, status=400)
     else:
         # Assurer que le token CSRF est généré
         csrf_token = get_token(request)
-        return render(request, 'foodapp/signup.html')
+        # Passer la liste des villes pour le formulaire restaurant
+        cities = City.objects.all()
+        return render(request, 'foodapp/signup.html', {'cities': cities})
 
 @csrf_exempt
 def login_view(request):
     if request.method == 'POST':
         try:
-            data = json.loads(request.body)
-            username = data.get('username')
-            password = data.get('password')
-            remember = data.get('remember', False)
+            # Essayer de lire les données JSON si disponibles
+            try:
+                data = json.loads(request.body)
+                username = data.get('username')
+                password = data.get('password')
+                remember = data.get('remember', False)
+            except:
+                # Sinon, traiter comme un formulaire standard
+                username = request.POST.get('username')
+                password = request.POST.get('password')
+                remember = request.POST.get('remember', False)
             
             user = authenticate(request, username=username, password=password)
             
@@ -397,21 +482,33 @@ def login_view(request):
                 try:
                     if hasattr(user, 'restaurant_account') and user.restaurant_account.is_active:
                         # C'est un compte restaurant actif
-                        return JsonResponse({
-                            'success': True, 
-                            'redirect': reverse('restaurant_dashboard'),
-                            'account_type': 'restaurant'
-                        }, status=200)
+                        if request.headers.get('Content-Type') == 'application/json':
+                            return JsonResponse({
+                                'success': True, 
+                                'redirect': reverse('restaurant_dashboard'),
+                                'account_type': 'restaurant'
+                            }, status=200)
+                        else:
+                            return redirect('restaurant_dashboard')
                 except:
                     pass
                 
                 # Compte utilisateur normal
-                return JsonResponse({
-                    'success': True,
-                    'account_type': 'user'
-                }, status=200)
+                if request.headers.get('Content-Type') == 'application/json':
+                    return JsonResponse({
+                        'success': True,
+                        'account_type': 'user'
+                    }, status=200)
+                else:
+                    return redirect('index')
             else:
-                return JsonResponse({'errors': {'general': "Nom d'utilisateur ou mot de passe incorrect"}}, status=401)
+                if request.headers.get('Content-Type') == 'application/json':
+                    return JsonResponse({'errors': {'general': "Nom d'utilisateur ou mot de passe incorrect"}}, status=401)
+                else:
+                    # Pour les formulaires traditionnels, rediriger avec un message d'erreur
+                    return render(request, 'foodapp/login.html', {
+                        'error': "Nom d'utilisateur ou mot de passe incorrect"
+                    })
         except Exception as e:
             return JsonResponse({'errors': {'general': str(e)}}, status=400)
     else:
@@ -515,3 +612,621 @@ def update_reservation_status(request, reservation_id):
             return JsonResponse({'error': 'Statut invalide'}, status=400)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
+
+@login_required
+def user_profile(request):
+    """Vue pour afficher et éditer le profil utilisateur"""
+    
+    # Récupérer ou créer le profil de l'utilisateur
+    user_profile, created = UserProfile.objects.get_or_create(user=request.user)
+    
+    # Récupérer les réservations de l'utilisateur
+    user_reservations = Reservation.objects.filter(user=request.user).order_by('-date')
+    
+    # Traiter le formulaire de mise à jour du profil
+    if request.method == 'POST':
+        # Mise à jour des informations du profil
+        user_profile.bio = request.POST.get('bio', '')
+        user_profile.phone = request.POST.get('phone', '')
+        user_profile.favorite_cuisine = request.POST.get('favorite_cuisine', '')
+        user_profile.is_vegetarian = request.POST.get('is_vegetarian') == 'on'
+        user_profile.is_vegan = request.POST.get('is_vegan') == 'on'
+        
+        # Traiter l'image de profil
+        if 'profile_image' in request.FILES:
+            user_profile.profile_image = request.FILES['profile_image']
+        
+        # Enregistrer les modifications
+        user_profile.save()
+        
+        # Rediriger pour éviter les soumissions multiples
+        return redirect('user_profile')
+    
+    # Récupérer quelques plats recommandés
+    if user_profile.is_vegan:
+        recommended_dishes = Dish.objects.filter(is_vegan=True)[:3]
+    elif user_profile.is_vegetarian:
+        recommended_dishes = Dish.objects.filter(is_vegetarian=True)[:3]
+    else:
+        recommended_dishes = Dish.objects.all().order_by('?')[:3]
+    
+    context = {
+        'user_profile': user_profile,
+        'user_reservations': user_reservations,
+        'recommended_dishes': recommended_dishes,
+        'cities': City.objects.all(),
+    }
+    
+    return render(request, 'foodapp/user_profile.html', context)
+
+# Nouvelles fonctions pour améliorer la gestion des réservations
+
+def is_slot_available(restaurant, date, time, guests, exclude_reservation_id=None):
+    """
+    Vérifie si un créneau horaire est disponible pour un restaurant donné
+    """
+    # Récupérer toutes les réservations pour ce restaurant à cette date et heure
+    reservations_query = Reservation.objects.filter(
+        restaurant=restaurant,
+        date=date,
+        time=time,
+        status__in=[Reservation.STATUS_PENDING, Reservation.STATUS_CONFIRMED]
+    )
+    
+    # Exclure une réservation spécifique (utile pour les modifications)
+    if exclude_reservation_id:
+        reservations_query = reservations_query.exclude(id=exclude_reservation_id)
+    
+    # Compter le nombre de convives déjà réservés
+    total_guests = reservations_query.aggregate(Sum('guests'))['guests__sum'] or 0
+    
+    # Supposons qu'un restaurant peut accueillir au maximum 50 personnes simultanément
+    # Cette valeur devrait être stockée dans le modèle du restaurant en pratique
+    max_capacity = 50
+    
+    # Vérifier si l'ajout de nouveaux convives ne dépasse pas la capacité
+    return (total_guests + guests) <= max_capacity
+
+def get_available_dates(restaurant, start_date=None, days_ahead=30):
+    """
+    Renvoie les dates disponibles pour réserver dans ce restaurant
+    """
+    if start_date is None:
+        start_date = timezone.now().date()
+    
+    # Générer une liste de dates pour les prochains jours
+    available_dates = []
+    for i in range(days_ahead):
+        date = start_date + datetime.timedelta(days=i)
+        # On pourrait vérifier ici si le restaurant est fermé certains jours
+        # Par exemple si le restaurant est fermé le lundi
+        if date.weekday() != 0:  # 0 = Lundi
+            available_dates.append(date)
+    
+    return available_dates
+
+@login_required
+def user_reservations_list(request):
+    """Vue pour afficher toutes les réservations d'un utilisateur"""
+    
+    # Récupérer les réservations de l'utilisateur
+    reservations = Reservation.objects.filter(user=request.user).order_by('-date', '-time')
+    
+    # Filtrer par statut si demandé
+    status_filter = request.GET.get('status')
+    if status_filter:
+        reservations = reservations.filter(status=status_filter)
+    
+    context = {
+        'reservations': reservations,
+        'status_filter': status_filter,
+        'STATUS_CHOICES': Reservation.STATUS_CHOICES
+    }
+    
+    return render(request, 'foodapp/user_reservations_list.html', context)
+
+@login_required
+def reservation_detail(request, reservation_id):
+    """Vue pour afficher les détails d'une réservation"""
+    
+    # Récupérer la réservation
+    reservation = get_object_or_404(Reservation, id=reservation_id)
+    
+    # Vérifier que l'utilisateur a le droit de voir cette réservation
+    if reservation.user != request.user:
+        # Vérifier si c'est un restaurateur qui gère ce restaurant
+        try:
+            restaurant_account = request.user.restaurant_account
+            if restaurant_account.restaurant != reservation.restaurant:
+                return HttpResponseForbidden("Vous n'êtes pas autorisé à voir cette réservation.")
+        except:
+            return HttpResponseForbidden("Vous n'êtes pas autorisé à voir cette réservation.")
+    
+    context = {
+        'reservation': reservation,
+        'restaurant': reservation.restaurant
+    }
+    
+    return render(request, 'foodapp/reservation_detail.html', context)
+
+@login_required
+def reservation_cancel(request, reservation_id):
+    """Vue pour annuler une réservation"""
+    
+    # Récupérer la réservation
+    reservation = get_object_or_404(Reservation, id=reservation_id)
+    
+    # Vérifier que l'utilisateur a le droit d'annuler cette réservation
+    if reservation.user != request.user:
+        return HttpResponseForbidden("Vous n'êtes pas autorisé à annuler cette réservation.")
+    
+    # Vérifier que la réservation n'est pas déjà annulée ou terminée
+    if reservation.status in [Reservation.STATUS_CANCELED, Reservation.STATUS_COMPLETED]:
+        return redirect('reservation_detail', reservation_id=reservation_id)
+    
+    if request.method == 'POST':
+        # Annuler la réservation
+        reservation.status = Reservation.STATUS_CANCELED
+        reservation.save()
+        return redirect('user_reservations_list')
+    
+    context = {
+        'reservation': reservation,
+        'restaurant': reservation.restaurant
+    }
+    
+    return render(request, 'foodapp/reservation_cancel.html', context)
+
+@login_required
+def reservation_modify(request, reservation_id):
+    """Vue pour modifier une réservation"""
+    
+    # Récupérer la réservation
+    reservation = get_object_or_404(Reservation, id=reservation_id)
+    
+    # Vérifier que l'utilisateur a le droit de modifier cette réservation
+    if reservation.user != request.user:
+        return HttpResponseForbidden("Vous n'êtes pas autorisé à modifier cette réservation.")
+    
+    # Vérifier que la réservation n'est pas déjà annulée ou terminée
+    if reservation.status in [Reservation.STATUS_CANCELED, Reservation.STATUS_COMPLETED]:
+        return redirect('reservation_detail', reservation_id=reservation_id)
+    
+    # Date limite pour les modifications (24h avant la réservation)
+    modification_limit = datetime.datetime.combine(
+        reservation.date, 
+        reservation.time
+    ).replace(tzinfo=timezone.get_current_timezone()) - datetime.timedelta(hours=24)
+    
+    can_modify = timezone.now() < modification_limit
+    
+    if request.method == 'POST' and can_modify:
+        form = ReservationModifyForm(request.POST, instance=reservation)
+        if form.is_valid():
+            # Vérifier la disponibilité
+            date = form.cleaned_data['date']
+            time = form.cleaned_data['time']
+            guests = form.cleaned_data['guests']
+            
+            # Vérifier si le créneau est disponible (en excluant la réservation actuelle)
+            if is_slot_available(reservation.restaurant, date, time, guests, exclude_reservation_id=reservation_id):
+                form.save()
+                return redirect('reservation_detail', reservation_id=reservation_id)
+            else:
+                form.add_error(None, "Désolé, ce créneau n'est plus disponible. Veuillez choisir un autre horaire.")
+    else:
+        form = ReservationModifyForm(instance=reservation)
+    
+    # Récupérer les créneaux disponibles pour JavaScript
+    available_dates = get_available_dates(reservation.restaurant)
+    
+    context = {
+        'form': form,
+        'reservation': reservation,
+        'restaurant': reservation.restaurant,
+        'can_modify': can_modify,
+        'modification_limit': modification_limit,
+        'available_dates': json.dumps([date.strftime('%Y-%m-%d') for date in available_dates])
+    }
+    
+    return render(request, 'foodapp/reservation_modify.html', context)
+
+@login_required
+def available_slots(request, restaurant_id):
+    """API pour récupérer les créneaux horaires disponibles pour un restaurant"""
+    
+    restaurant = get_object_or_404(Restaurant, id=restaurant_id)
+    
+    date_str = request.GET.get('date')
+    if not date_str:
+        return JsonResponse({'error': 'Date non spécifiée'}, status=400)
+    
+    try:
+        date = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+        return JsonResponse({'error': 'Format de date invalide'}, status=400)
+    
+    # Heures d'ouverture du restaurant (exemple)
+    opening_hours = [
+        {'start': '12:00', 'end': '14:30'},  # Déjeuner
+        {'start': '19:00', 'end': '22:30'}   # Dîner
+    ]
+    
+    # Créneaux de 30 minutes
+    time_slots = []
+    for period in opening_hours:
+        start_time = datetime.datetime.strptime(period['start'], '%H:%M').time()
+        end_time = datetime.datetime.strptime(period['end'], '%H:%M').time()
+        
+        current_time = start_time
+        while current_time < end_time:
+            # Vérifier si ce créneau est disponible
+            is_available = is_slot_available(restaurant, date, current_time, 1)  # 1 = minimum de convives
+            
+            time_slots.append({
+                'time': current_time.strftime('%H:%M'),
+                'available': is_available
+            })
+            
+            # Passer au prochain créneau de 30 minutes
+            current_datetime = datetime.datetime.combine(date, current_time)
+            current_datetime += datetime.timedelta(minutes=30)
+            current_time = current_datetime.time()
+    
+    return JsonResponse({'slots': time_slots})
+
+@csrf_exempt
+def restaurant_signup_view(request):
+    """Vue spécifique pour l'inscription des restaurants"""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            username = data.get('username')
+            email = data.get('email')
+            password = data.get('password')
+            
+            # Vérifier si l'utilisateur existe déjà
+            if User.objects.filter(username=username).exists():
+                return JsonResponse({'errors': {'username': "Ce nom d'utilisateur est déjà pris"}}, status=400)
+            
+            if User.objects.filter(email=email).exists():
+                return JsonResponse({'errors': {'email': "Cette adresse email est déjà utilisée"}}, status=400)
+            
+            # Récupérer les données du restaurant
+            restaurant_name = data.get('restaurant_name')
+            restaurant_city_id = data.get('restaurant_city')
+            restaurant_phone = data.get('restaurant_phone')
+            restaurant_address = data.get('restaurant_address')
+            restaurant_description = data.get('restaurant_description')
+            restaurant_website = data.get('restaurant_website', '')
+            restaurant_capacity = data.get('restaurant_capacity', 50)
+            
+            # Vérifier que toutes les données restaurant sont fournies
+            if not restaurant_name:
+                return JsonResponse({'errors': {'restaurant_name': "Le nom du restaurant est requis"}}, status=400)
+            if not restaurant_city_id:
+                return JsonResponse({'errors': {'restaurant_city': "La ville est requise"}}, status=400)
+            if not restaurant_phone:
+                return JsonResponse({'errors': {'restaurant_phone': "Le numéro de téléphone est requis"}}, status=400)
+            if not restaurant_address:
+                return JsonResponse({'errors': {'restaurant_address': "L'adresse est requise"}}, status=400)
+            if not restaurant_description:
+                return JsonResponse({'errors': {'restaurant_description': "La description est requise"}}, status=400)
+            
+            # Récupérer les fonctionnalités cochées
+            try:
+                features = json.loads(data.get('features', '[]'))
+            except:
+                features = []
+            
+            # Créer un nouvel utilisateur
+            user = User.objects.create_user(username=username, email=email, password=password)
+            user.save()
+            
+            # Créer un profil utilisateur
+            UserProfile.objects.create(user=user)
+            
+            try:
+                city = City.objects.get(id=restaurant_city_id)
+                
+                # Créer le restaurant avec plus de détails
+                restaurant = Restaurant.objects.create(
+                    name=restaurant_name,
+                    city=city,
+                    address=restaurant_address,
+                    phone=restaurant_phone,
+                    email=email,
+                    website=restaurant_website,
+                    description=restaurant_description,
+                    is_open=True,
+                    capacity=restaurant_capacity,
+                )
+                
+                # Enregistrer les fonctionnalités dans preferences (JSON)
+                if features:
+                    restaurant.preferences = {'features': features}
+                    restaurant.save()
+                
+                # Associer le compte restaurant à l'utilisateur
+                RestaurantAccount.objects.create(
+                    user=user,
+                    restaurant=restaurant,
+                    is_active=True
+                )
+            except City.DoesNotExist:
+                return JsonResponse({'errors': {'restaurant_city': "Ville non trouvée"}}, status=400)
+            except Exception as e:
+                return JsonResponse({'errors': {'general': f"Erreur lors de la création du restaurant: {str(e)}"}}, status=400)
+            
+            # Connecter l'utilisateur
+            login(request, user)
+            
+            return JsonResponse({'success': True}, status=201)
+        except Exception as e:
+            return JsonResponse({'errors': {'general': str(e)}}, status=400)
+    else:
+        # Assurer que le token CSRF est généré
+        csrf_token = get_token(request)
+        # Passer la liste des villes pour le formulaire restaurant
+        cities = City.objects.all()
+        return render(request, 'foodapp/restaurant_signup.html', {'cities': cities})
+
+# Vues pour le forum communautaire
+@login_required
+def forum_topics_list(request):
+    """Vue pour afficher la liste des sujets du forum"""
+    # Récupérer tous les sujets, triés par épinglés puis par date de dernière mise à jour
+    topics = ForumTopic.objects.all()
+    
+    # Filtrer par catégorie si demandé
+    category = request.GET.get('category')
+    if category:
+        topics = topics.filter(category=category)
+    
+    # Rechercher par titre si spécifié
+    search = request.GET.get('search')
+    if search:
+        topics = topics.filter(title__icontains=search)
+    
+    # Compteurs pour la sidebar
+    category_counts = {
+        'general': ForumTopic.objects.filter(category='general').count(),
+        'recipes': ForumTopic.objects.filter(category='recipes').count(),
+        'restaurants': ForumTopic.objects.filter(category='restaurants').count(),
+        'travel': ForumTopic.objects.filter(category='travel').count(),
+        'events': ForumTopic.objects.filter(category='events').count(),
+    }
+    
+    # Récupérer les sujets récents pour la sidebar
+    recent_topics = ForumTopic.objects.order_by('-created_at')[:5]
+    
+    context = {
+        'topics': topics,
+        'category': category,
+        'search': search,
+        'category_counts': category_counts,
+        'recent_topics': recent_topics,
+        'categories': ForumTopic.CATEGORY_CHOICES,
+    }
+    
+    return render(request, 'foodapp/forum/topics_list.html', context)
+
+@login_required
+def forum_topics_by_category(request, category):
+    """Vue pour afficher les sujets d'une catégorie spécifique"""
+    # Rediriger vers la liste des sujets avec un filtre de catégorie
+    return redirect(f'{reverse("forum_topics_list")}?category={category}')
+
+@login_required
+def forum_topic_detail(request, topic_id):
+    """Vue pour afficher le détail d'un sujet et ses messages"""
+    topic = get_object_or_404(ForumTopic, id=topic_id)
+    
+    # Incrémenter le compteur de vues
+    topic.views_count += 1
+    topic.save()
+    
+    # Récupérer tous les messages pour ce sujet
+    messages = topic.messages.all()
+    
+    # Formulaire pour ajouter un nouveau message
+    form = None
+    if request.user.is_authenticated:
+        form = ForumMessageForm()
+    
+    context = {
+        'topic': topic,
+        'messages': messages,
+        'form': form,
+    }
+    
+    return render(request, 'foodapp/forum/topic_detail.html', context)
+
+@login_required
+def forum_new_topic(request):
+    """Vue pour créer un nouveau sujet"""
+    if request.method == 'POST':
+        form = ForumTopicForm(request.POST)
+        if form.is_valid():
+            # Créer le sujet mais ne pas l'enregistrer immédiatement
+            topic = form.save(commit=False)
+            # Définir l'auteur comme l'utilisateur connecté
+            topic.author = request.user
+            # Enregistrer le sujet
+            topic.save()
+            
+            # Créer le premier message (le contenu du sujet)
+            message = ForumMessage(
+                topic=topic,
+                author=request.user,
+                content=topic.content
+            )
+            message.save()
+            
+            # Rediriger vers le détail du sujet
+            return redirect('forum_topic_detail', topic_id=topic.id)
+    else:
+        form = ForumTopicForm()
+    
+    context = {
+        'form': form,
+        'categories': ForumTopic.CATEGORY_CHOICES,
+    }
+    
+    return render(request, 'foodapp/forum/new_topic.html', context)
+
+@login_required
+def forum_reply(request, topic_id):
+    """Vue pour répondre à un sujet"""
+    topic = get_object_or_404(ForumTopic, id=topic_id)
+    
+    if request.method == 'POST':
+        form = ForumMessageForm(request.POST)
+        if form.is_valid():
+            # Créer le message mais ne pas l'enregistrer immédiatement
+            message = form.save(commit=False)
+            # Définir l'auteur et le sujet
+            message.author = request.user
+            message.topic = topic
+            # Enregistrer le message
+            message.save()
+            
+            # Mettre à jour la date de dernière activité du sujet
+            topic.updated_at = timezone.now()
+            topic.save()
+            
+            # Rediriger vers le détail du sujet
+            return redirect('forum_topic_detail', topic_id=topic.id)
+    else:
+        form = ForumMessageForm()
+    
+    context = {
+        'form': form,
+        'topic': topic,
+    }
+    
+    return render(request, 'foodapp/forum/reply.html', context)
+
+@login_required
+def forum_edit_message(request, message_id):
+    """Vue pour modifier un message"""
+    message = get_object_or_404(ForumMessage, id=message_id)
+    
+    # Vérifier que l'utilisateur est bien l'auteur du message
+    if message.author != request.user and not request.user.is_staff:
+        return HttpResponseForbidden("Vous n'êtes pas autorisé à modifier ce message.")
+    
+    if request.method == 'POST':
+        form = ForumMessageForm(request.POST, instance=message)
+        if form.is_valid():
+            form.save()
+            return redirect('forum_topic_detail', topic_id=message.topic.id)
+    else:
+        form = ForumMessageForm(instance=message)
+    
+    context = {
+        'form': form,
+        'message': message,
+        'topic': message.topic,
+    }
+    
+    return render(request, 'foodapp/forum/edit_message.html', context)
+
+@login_required
+def forum_delete_message(request, message_id):
+    """Vue pour supprimer un message"""
+    message = get_object_or_404(ForumMessage, id=message_id)
+    topic = message.topic
+    
+    # Vérifier que l'utilisateur est bien l'auteur du message ou un administrateur
+    if message.author != request.user and not request.user.is_staff:
+        return HttpResponseForbidden("Vous n'êtes pas autorisé à supprimer ce message.")
+    
+    # Vérifier si c'est le premier message (contenu du sujet)
+    is_first_message = message.id == topic.messages.order_by('created_at').first().id
+    
+    if request.method == 'POST':
+        if is_first_message:
+            # Si c'est le premier message, supprimer tout le sujet
+            topic.delete()
+            return redirect('forum_topics_list')
+        else:
+            # Sinon, supprimer juste le message
+            message.delete()
+            return redirect('forum_topic_detail', topic_id=topic.id)
+    
+    context = {
+        'message': message,
+        'topic': topic,
+        'is_first_message': is_first_message,
+    }
+    
+    return render(request, 'foodapp/forum/delete_message.html', context)
+
+# Formulaires pour le forum
+from django import forms
+
+class ForumTopicForm(forms.ModelForm):
+    """Formulaire pour créer un nouveau sujet"""
+    class Meta:
+        model = ForumTopic
+        fields = ['title', 'category', 'content']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Titre du sujet'}),
+            'category': forms.Select(attrs={'class': 'form-control'}),
+            'content': forms.Textarea(attrs={'class': 'form-control', 'rows': 5, 'placeholder': 'Contenu du sujet'}),
+        }
+
+class ForumMessageForm(forms.ModelForm):
+    """Formulaire pour créer un nouveau message"""
+    class Meta:
+        model = ForumMessage
+        fields = ['content']
+        widgets = {
+            'content': forms.Textarea(attrs={'class': 'form-control', 'rows': 5, 'placeholder': 'Votre message'}),
+        }
+
+@login_required
+def user_settings(request):
+    """
+    Vue pour afficher et gérer les paramètres utilisateur
+    """
+    # Récupérer le profil de l'utilisateur
+    profile, created = UserProfile.objects.get_or_create(user=request.user)
+    
+    if request.method == 'POST':
+        # Paramètres généraux
+        theme = request.POST.get('theme', 'dark')
+        notifications_enabled = request.POST.get('notifications_enabled') == 'on'
+        language = request.POST.get('language', 'fr')
+        
+        # Mettre à jour les préférences
+        preferences = profile.preferences or {}
+        preferences.update({
+            'theme': theme,
+            'notifications_enabled': notifications_enabled,
+            'language': language
+        })
+        
+        # Sauvegarder les modifications
+        profile.preferences = preferences
+        profile.save()
+        
+        messages.success(request, 'Vos paramètres ont été mis à jour avec succès.')
+        return redirect('user_settings')
+    
+    # Préparer les préférences par défaut si elles n'existent pas
+    if not profile.preferences:
+        profile.preferences = {
+            'theme': 'dark',
+            'notifications_enabled': True,
+            'language': 'fr'
+        }
+        profile.save()
+    
+    context = {
+        'profile': profile,
+        'preferences': profile.preferences
+    }
+    
+    return render(request, 'foodapp/user_settings.html', context) 

@@ -1,8 +1,17 @@
 from django import forms
 from .models import City, Dish, Reservation
+from django.utils import timezone
+import datetime
 
 class DishFilterForm(forms.Form):
-    city = forms.ModelChoiceField(queryset=City.objects.all(), required=False, label="City")
+    SORT_CHOICES = [
+        ('name', 'Nom (A-Z)'),
+        ('price_asc', 'Prix (croissant)'),
+        ('price_desc', 'Prix (décroissant)'),
+    ]
+    
+    sort = forms.ChoiceField(choices=SORT_CHOICES, required=False, label='Trier par')
+    city = forms.IntegerField(required=False, widget=forms.HiddenInput())
     type = forms.ChoiceField(choices=[('', 'All')] + Dish.TYPE_CHOICES, required=False, label="Dish Type")
     is_vegetarian = forms.BooleanField(required=False, label="Vegetarian Only")
     is_vegan = forms.BooleanField(required=False, label="Vegan Only")
@@ -30,39 +39,146 @@ class DishFilterForm(forms.Form):
 
 class CurrencyConverterForm(forms.Form):
     CURRENCY_CHOICES = [
-        ('USD', '🇺🇸 Dollar (USD)'),
-        ('EUR', '🇪🇺 Euro (EUR)'),
-        ('GBP', '🇬🇧 Livre Sterling (GBP)'),
-        ('CAD', '🇨🇦 Dollar Canadien (CAD)'),
-        ('AED', '🇦🇪 Dirham Émirati (AED)'),
-        ('CHF', '🇨🇭 Franc Suisse (CHF)'),
-        ('JPY', '🇯🇵 Yen Japonais (JPY)'),
-        ('CNY', '🇨🇳 Yuan Chinois (CNY)'),
-        ('SAR', '🇸🇦 Riyal Saoudien (SAR)'),
+        ('USD', 'Dollar américain (USD)'),
+        ('EUR', 'Euro (EUR)'),
+        ('GBP', 'Livre sterling (GBP)'),
+        ('CAD', 'Dollar canadien (CAD)'),
+        ('AED', 'Dirham émirati (AED)'),
+        ('CHF', 'Franc suisse (CHF)'),
+        ('JPY', 'Yen japonais (JPY)'),
+        ('CNY', 'Yuan chinois (CNY)'),
+        ('SAR', 'Riyal saoudien (SAR)'),
     ]
     
-    amount = forms.DecimalField(label='Montant')
-    from_currency = forms.ChoiceField(choices=CURRENCY_CHOICES, label='Devise')
+    amount = forms.DecimalField(
+        label='Montant en MAD',
+        decimal_places=2,
+        min_value=0.01,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'})
+    )
+    
+    from_currency = forms.ChoiceField(
+        label='Devise',
+        choices=CURRENCY_CHOICES,
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
 
 class ReservationForm(forms.ModelForm):
-    date = forms.DateField(
-        widget=forms.DateInput(attrs={'type': 'date'}),
-        help_text='Choisissez une date pour votre réservation'
-    )
-    time = forms.TimeField(
-        widget=forms.TimeInput(attrs={'type': 'time'}),
-        help_text='Choisissez une heure pour votre réservation'
-    )
-    guests = forms.IntegerField(
-        min_value=1,
-        max_value=20,
-        initial=2,
-        help_text='Nombre de personnes (max 20)'
-    )
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Ajouter des classes CSS pour le style
+        for field_name, field in self.fields.items():
+            field.widget.attrs['class'] = 'form-control'
+        
+        # Définir les dates minimales et maximales
+        today = timezone.now().date()
+        min_date = today
+        max_date = today + datetime.timedelta(days=90)  # 3 mois à l'avance maximum
+        
+        self.fields['date'].widget.attrs['min'] = min_date.strftime('%Y-%m-%d')
+        self.fields['date'].widget.attrs['max'] = max_date.strftime('%Y-%m-%d')
     
     class Meta:
         model = Reservation
         fields = ['name', 'email', 'phone', 'date', 'time', 'guests', 'notes']
         widgets = {
-            'notes': forms.Textarea(attrs={'rows': 3, 'placeholder': 'Précisez vos demandes spéciales...'}),
+            'date': forms.DateInput(attrs={'type': 'date'}),
+            'time': forms.TimeInput(attrs={'type': 'time'}),
+            'notes': forms.Textarea(attrs={'rows': 3}),
         }
+        
+    def clean_date(self):
+        date = self.cleaned_data.get('date')
+        today = timezone.now().date()
+        
+        if date < today:
+            raise forms.ValidationError("Vous ne pouvez pas réserver pour une date passée.")
+        
+        if date > today + datetime.timedelta(days=90):
+            raise forms.ValidationError("Les réservations sont limitées à 3 mois à l'avance.")
+        
+        return date
+    
+    def clean_time(self):
+        time = self.cleaned_data.get('time')
+        date = self.cleaned_data.get('date')
+        
+        if date == timezone.now().date() and time < timezone.now().time():
+            raise forms.ValidationError("Vous ne pouvez pas réserver pour une heure déjà passée.")
+        
+        # Vérifier que l'heure est dans les créneaux acceptables (exemple: 12h-14h30 et 19h-22h30)
+        lunch_start = datetime.time(12, 0)
+        lunch_end = datetime.time(14, 30)
+        dinner_start = datetime.time(19, 0)
+        dinner_end = datetime.time(22, 30)
+        
+        if not ((lunch_start <= time <= lunch_end) or (dinner_start <= time <= dinner_end)):
+            raise forms.ValidationError("Veuillez choisir une heure pendant les services: 12h-14h30 ou 19h-22h30.")
+        
+        return time
+    
+    def clean_guests(self):
+        guests = self.cleaned_data.get('guests')
+        
+        if guests < 1:
+            raise forms.ValidationError("Le nombre de convives doit être d'au moins 1.")
+        
+        if guests > 20:
+            raise forms.ValidationError("Pour les groupes de plus de 20 personnes, veuillez contacter directement le restaurant.")
+        
+        return guests
+
+class ReservationModifyForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Ajouter des classes CSS pour le style
+        for field_name, field in self.fields.items():
+            field.widget.attrs['class'] = 'form-control'
+        
+        # Définir les dates minimales et maximales
+        today = timezone.now().date()
+        min_date = today
+        max_date = today + datetime.timedelta(days=90)  # 3 mois à l'avance maximum
+        
+        self.fields['date'].widget.attrs['min'] = min_date.strftime('%Y-%m-%d')
+        self.fields['date'].widget.attrs['max'] = max_date.strftime('%Y-%m-%d')
+    
+    class Meta:
+        model = Reservation
+        fields = ['date', 'time', 'guests', 'notes']
+        widgets = {
+            'date': forms.DateInput(attrs={'type': 'date'}),
+            'time': forms.TimeInput(attrs={'type': 'time'}),
+            'notes': forms.Textarea(attrs={'rows': 3}),
+        }
+    
+    def clean_date(self):
+        date = self.cleaned_data.get('date')
+        today = timezone.now().date()
+        
+        if date < today:
+            raise forms.ValidationError("Vous ne pouvez pas réserver pour une date passée.")
+        
+        if date > today + datetime.timedelta(days=90):
+            raise forms.ValidationError("Les réservations sont limitées à 3 mois à l'avance.")
+        
+        return date
+    
+    def clean_time(self):
+        time = self.cleaned_data.get('time')
+        date = self.cleaned_data.get('date')
+        
+        if date == timezone.now().date() and time < timezone.now().time():
+            raise forms.ValidationError("Vous ne pouvez pas réserver pour une heure déjà passée.")
+        
+        # Vérifier que l'heure est dans les créneaux acceptables
+        lunch_start = datetime.time(12, 0)
+        lunch_end = datetime.time(14, 30)
+        dinner_start = datetime.time(19, 0)
+        dinner_end = datetime.time(22, 30)
+        
+        if not ((lunch_start <= time <= lunch_end) or (dinner_start <= time <= dinner_end)):
+            raise forms.ValidationError("Veuillez choisir une heure pendant les services: 12h-14h30 ou 19h-22h30.")
+        
+        return time

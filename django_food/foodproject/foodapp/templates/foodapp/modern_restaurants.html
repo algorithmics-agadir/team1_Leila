@@ -1,214 +1,141 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FoodFlex - Découvrez nos Restaurants</title>
+    <title>Restaurants | FoodFlex</title>
+    
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
-    {% load static %}
+    <link rel="stylesheet" href="{% static 'foodapp/css/accueil.css' %}">
+    <link rel="stylesheet" href="{% static 'foodapp/css/sidebar.css' %}">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.5/ScrollTrigger.min.js"></script>
+    
     <style>
-        :root {
-            --primary-color: #FF6B6B;
-            --secondary-color: #4ECDC4;
-            --light-bg: #ffffff;
-            --light-gray: #f8f9fa;
-            --accent-orange: #FF9F1C;
-            --accent-yellow: #FFBF69;
-            --text-dark: #2D3748;
-            --text-gray: #718096;
-            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
-            --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.1);
-            --gradient: linear-gradient(135deg, var(--accent-orange), var(--primary-color));
-            --radius: 12px;
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Poppins', sans-serif;
-        }
-        
-        body {
-            background-color: var(--light-bg);
-            color: var(--text-dark);
-            min-height: 100vh;
-            overflow-x: hidden;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .scene-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100vh;
-            z-index: -1;
-        }
-        
-        .content {
-            position: relative;
-            z-index: 1;
-            width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-            flex-grow: 1;
-        }
-        
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 20px 0;
-            margin-bottom: 40px;
-        }
-        
-        .logo {
-            font-size: 28px;
-            font-weight: 700;
-            color: var(--primary-color);
-        }
-        
-        .nav-buttons {
-            display: flex;
-            gap: 15px;
-        }
-        
-        .nav-btn {
-            background-color: var(--light-gray);
-            border: none;
-            border-radius: 50px;
-            padding: 10px 20px;
-            font-weight: 500;
-            color: var(--text-dark);
+        .restaurant-filters {
             display: flex;
             align-items: center;
-            gap: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-        }
-        
-        .nav-btn:hover {
-            background-color: var(--primary-color);
-            color: white;
-            transform: translateY(-2px);
-        }
-        
-        .hero {
-            text-align: center;
-            margin-bottom: 60px;
-            opacity: 0;
-            transform: translateY(30px);
-        }
-        
-        .hero h1 {
-            font-size: 42px;
-            margin-bottom: 15px;
-            background: var(--gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        
-        .hero p {
-            font-size: 18px;
-            color: var(--text-gray);
-            max-width: 600px;
-            margin: 0 auto;
-        }
-        
-        .filters {
-            background-color: var(--light-gray);
-            padding: 20px;
-            border-radius: var(--radius);
-            margin-bottom: 40px;
-            box-shadow: var(--shadow-sm);
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        
-        .filters-title {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 20px;
-            color: var(--text-dark);
-            font-size: 18px;
-            font-weight: 600;
-        }
-        
-        .filters form {
-            display: flex;
             flex-wrap: wrap;
             gap: 15px;
+            margin-bottom: 30px;
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: var(--shadow);
         }
         
         .filter-group {
-            flex: 1;
-            min-width: 200px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         
         .filter-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: var(--text-gray);
+            color: var(--text-secondary);
             font-size: 14px;
         }
         
-        .filter-group select,
-        .filter-group input {
+        .filter-select {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-family: 'Poppins', sans-serif;
+            outline: none;
+            cursor: pointer;
+        }
+        
+        .filter-select option {
+            background-color: var(--card-bg);
+        }
+        
+        .search-box {
+            display: flex;
+            flex: 1;
+            max-width: 400px;
+            position: relative;
+        }
+        
+        .search-input {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            padding: 10px 15px;
+            padding-left: 40px;
+            border-radius: 8px;
             width: 100%;
-            padding: 12px;
-            border: 1px solid #e2e8f0;
-            border-radius: var(--radius);
-            background-color: white;
-            font-size: 14px;
+            font-family: 'Poppins', sans-serif;
+            outline: none;
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+        }
+        
+        .filter-button {
+            background: var(--gradient);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
             transition: all 0.3s ease;
         }
         
-        .filter-group select:focus,
-        .filter-group input:focus {
-            border-color: var(--primary-color);
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
+        .filter-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
         }
         
         .restaurant-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
             gap: 30px;
+            margin-top: 20px;
         }
         
         .restaurant-card {
-            background-color: white;
-            border-radius: var(--radius);
+            background-color: var(--card-bg);
+            border-radius: 15px;
             overflow: hidden;
-            box-shadow: var(--shadow-md);
-            transition: all 0.4s ease;
-            opacity: 0;
-            transform: translateY(20px);
+            box-shadow: var(--shadow);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
             position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
         
         .restaurant-card:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--shadow-lg);
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+            border-color: var(--primary-color);
         }
         
         .restaurant-image {
             height: 200px;
-            width: 100%;
-            object-fit: cover;
+            position: relative;
+            overflow: hidden;
         }
         
-        .restaurant-status {
+        .restaurant-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+        
+        .restaurant-card:hover .restaurant-image img {
+            transform: scale(1.1);
+        }
+        
+        .status-badge {
             position: absolute;
             top: 15px;
             right: 15px;
@@ -216,448 +143,342 @@
             border-radius: 20px;
             font-size: 12px;
             font-weight: 600;
-            text-transform: uppercase;
+            z-index: 2;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+        
+        .status-open {
+            background: linear-gradient(45deg, #4ECDC4, #26DE81);
             color: white;
         }
         
-        .restaurant-status.open {
-            background-color: var(--secondary-color);
+        .status-closed {
+            background: linear-gradient(45deg, #FF6B6B, #EE5253);
+            color: white;
         }
         
-        .restaurant-status.closed {
-            background-color: var(--primary-color);
-        }
-        
-        .restaurant-info {
+        .restaurant-content {
             padding: 20px;
         }
         
-        .restaurant-name {
+        .restaurant-title {
             font-size: 20px;
-            font-weight: 600;
+            font-weight: 700;
             margin-bottom: 8px;
-            color: var(--text-dark);
+            color: var(--accent-color);
         }
         
         .restaurant-city {
             display: flex;
             align-items: center;
             gap: 5px;
+            color: var(--text-secondary);
             font-size: 14px;
-            color: var(--text-gray);
-            margin-bottom: 12px;
+            margin-bottom: 15px;
         }
         
-        .restaurant-address {
+        .restaurant-description {
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 20px;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .restaurant-features {
             display: flex;
-            align-items: flex-start;
-            gap: 8px;
-            margin-bottom: 8px;
-            font-size: 14px;
-            color: var(--text-dark);
+            gap: 15px;
+            margin-bottom: 20px;
         }
         
-        .restaurant-phone {
+        .feature {
             display: flex;
             align-items: center;
-            gap: 8px;
-            margin-bottom: 15px;
-            font-size: 14px;
+            gap: 5px;
+            color: var(--text-secondary);
+            font-size: 13px;
         }
         
-        .restaurant-phone a {
-            color: var(--primary-color);
-            text-decoration: none;
-            transition: all 0.2s ease;
-        }
-        
-        .restaurant-phone a:hover {
-            color: var(--accent-orange);
-        }
-        
-        .restaurant-actions {
+        .restaurant-footer {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 15px;
         }
         
-        .btn {
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 30px;
-            font-size: 14px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-flex;
+        .restaurant-rating {
+            display: flex;
             align-items: center;
             gap: 5px;
         }
         
-        .btn:hover {
-            background-color: var(--accent-orange);
-            transform: translateY(-2px);
+        .stars {
+            color: var(--accent-color);
         }
-
-        .empty-state {
+        
+        .rating-count {
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+        
+        .restaurant-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .view-button, .reserve-button {
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .view-button {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .reserve-button {
+            background: var(--gradient);
+            color: white;
+            border: none;
+        }
+        
+        .view-button:hover, .reserve-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .no-results {
             text-align: center;
-            padding: 40px 0;
-            color: var(--text-gray);
-        }
-        
-        .empty-state i {
-            font-size: 48px;
-            margin-bottom: 15px;
-            color: var(--primary-color);
-        }
-        
-        .empty-state h3 {
-            font-size: 20px;
-            margin-bottom: 10px;
-            color: var(--text-dark);
-        }
-        
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-        
-        .pulse {
-            animation: pulse 2s infinite;
+            margin: 50px 0;
+            color: var(--text-secondary);
         }
     </style>
 </head>
 <body>
+    <!-- Titlebar -->
+    <div class="titlebar">
+        <div class="titlebar-drag">FoodFlex | Restaurants</div>
+        <div class="window-controls">
+            <button class="window-control minimize">
+                <i class="fas fa-minus"></i>
+            </button>
+            <button class="window-control maximize">
+                <i class="fas fa-square"></i>
+            </button>
+            <button class="window-control close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="app-sidebar">
+        <div class="logo">
+            <img src="{% static 'foodapp/img/logo.png' %}" alt="FoodFlex Logo" onerror="this.src='https://via.placeholder.com/120x40/FF6B6B/FFFFFF?text=FoodFlex'">
+        </div>
+        <div class="sidebar-links">
+            <a href="{% url 'accueil' %}" class="sidebar-link">
+                <div class="sidebar-icon"><i class="fas fa-home"></i></div>
+                <div class="sidebar-label">Accueil</div>
+            </a>
+            <a href="{% url 'dish_list' %}" class="sidebar-link">
+                <div class="sidebar-icon"><i class="fas fa-utensils"></i></div>
+                <div class="sidebar-label">Plats</div>
+            </a>
+            <a href="{% url 'restaurants' %}" class="sidebar-link active">
+                <div class="sidebar-icon"><i class="fas fa-store"></i></div>
+                <div class="sidebar-label">Restaurants</div>
+            </a>
+            <a href="{% url 'user_reservations_list' %}" class="sidebar-link">
+                <div class="sidebar-icon"><i class="fas fa-calendar-alt"></i></div>
+                <div class="sidebar-label">Réservations</div>
+            </a>
+            <a href="{% url 'moroccan_cuisine' %}" class="sidebar-link">
+                <div class="sidebar-icon"><i class="fas fa-globe-africa"></i></div>
+                <div class="sidebar-label">Cuisine Marocaine</div>
+                <div class="badge">Nouveau</div>
+            </a>
+            <a href="#" class="sidebar-link">
+                <div class="sidebar-icon"><i class="fas fa-heart"></i></div>
+                <div class="sidebar-label">Favoris</div>
+            </a>
+            <a href="{% url 'user_profile' %}" class="sidebar-link">
+                <div class="sidebar-icon"><i class="fas fa-user"></i></div>
+                <div class="sidebar-label">Profil</div>
+            </a>
+            <a href="#" class="sidebar-link">
+                <div class="sidebar-icon"><i class="fas fa-cog"></i></div>
+                <div class="sidebar-label">Paramètres</div>
+            </a>
+        </div>
+        <div class="sidebar-bottom">
+            <div class="theme-switch">
+                <label class="theme-switch-toggle">
+                    <input type="checkbox" checked>
+                    <span class="theme-switch-slider"></span>
+                </label>
+                <div class="theme-mode-label">Mode Sombre</div>
+            </div>
+            <div class="user-profile">
+                <div class="user-avatar">
+                    {% if user.is_authenticated %}
+                        {{ user.username|make_list|first|upper }}
+                    {% else %}
+                        <i class="fas fa-user"></i>
+                    {% endif %}
+                </div>
+                <div class="user-info">
+                    <div class="user-name">
+                        {% if user.is_authenticated %}
+                            {{ user.username }}
+                        {% else %}
+                            Invité
+                        {% endif %}
+                    </div>
+                    <div class="user-status">
+                        {% if user.is_authenticated %}
+                            En ligne
+                        {% else %}
+                            Non connecté
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scene Container -->
     <div class="scene-container"></div>
     
-    <div class="content">
-        <header class="header">
-            <div class="logo">FoodFlex</div>
-            <div class="nav-buttons">
-                <a href="{% url 'index' %}" class="nav-btn">
-                    <i class="fas fa-home"></i> Accueil
-                </a>
-                <a href="{% url 'dish_list' %}" class="nav-btn">
-                    <i class="fas fa-utensils"></i> Plats
-                </a>
-            </div>
-        </header>
-        
-        <section class="hero">
-            <h1>Découvrez Nos Restaurants</h1>
-            <p>Explorez notre sélection de restaurants de qualité et trouvez le lieu parfait pour votre prochaine dégustation gastronomique.</p>
-        </section>
-        
-        <section class="filters">
-            <div class="filters-title">
-                <i class="fas fa-filter"></i>
-                <span>Filtrer les restaurants</span>
-            </div>
-            <form method="GET" id="filter-form">
+    <!-- Menu utilisateur -->
+    <div class="user-menu">
+        {% if user.is_authenticated %}
+            <a href="{% url 'user_profile' %}" class="user-btn"><i class="fas fa-user"></i> Mon Profil</a>
+            <a href="{% url 'logout' %}" class="user-btn"><i class="fas fa-sign-out-alt"></i> Déconnexion</a>
+        {% else %}
+            <a href="{% url 'login' %}" class="user-btn"><i class="fas fa-sign-in-alt"></i> Connexion</a>
+            <a href="{% url 'signup' %}" class="user-btn"><i class="fas fa-user-plus"></i> Inscription</a>
+        {% endif %}
+    </div>
+    
+    <!-- Contenu principal -->
+    <div class="app-container">
+        <section class="featured-section">
+            <h1 class="section-title">Restaurants</h1>
+            
+            <!-- Filtres -->
+            <form class="restaurant-filters" method="get">
+                <div class="search-box">
+                    <span class="search-icon"><i class="fas fa-search"></i></span>
+                    <input type="text" name="search" placeholder="Rechercher un restaurant..." class="search-input" value="{{ request.GET.search|default:'' }}">
+                </div>
+                
                 <div class="filter-group">
-                    <label for="city">Ville</label>
-                    <select id="city" name="city">
+                    <label for="city">Ville:</label>
+                    <select name="city" id="city" class="filter-select">
                         <option value="">Toutes les villes</option>
                         {% for city in cities %}
-                        <option value="{{ city.id }}" {% if request.GET.city|stringformat:"s" == city.id|stringformat:"s" %}selected{% endif %}>
-                            {{ city.name }}
-                        </option>
+                            <option value="{{ city.id }}" {% if request.GET.city == city.id|stringformat:"i" %}selected{% endif %}>
+                                {{ city.name }}
+                            </option>
                         {% endfor %}
                     </select>
                 </div>
                 
                 <div class="filter-group">
-                    <label for="status">Statut</label>
-                    <select id="status" name="status">
+                    <label for="status">Statut:</label>
+                    <select name="status" id="status" class="filter-select">
                         <option value="">Tous</option>
-                        <option value="open" {% if request.GET.status == 'open' %}selected{% endif %}>Ouverts</option>
-                        <option value="closed" {% if request.GET.status == 'closed' %}selected{% endif %}>Fermés</option>
+                        <option value="open" {% if request.GET.status == 'open' %}selected{% endif %}>Ouvert</option>
+                        <option value="closed" {% if request.GET.status == 'closed' %}selected{% endif %}>Fermé</option>
                     </select>
                 </div>
                 
-                <div class="filter-group">
-                    <label for="search">Rechercher</label>
-                    <input type="text" id="search" name="search" placeholder="Nom du restaurant..." value="{{ request.GET.search }}">
-                </div>
+                <button type="submit" class="filter-button">Filtrer</button>
             </form>
-        </section>
-        
-        <section class="restaurant-grid">
-            {% for restaurant in restaurants %}
-            <div class="restaurant-card">
-                {% if restaurant.image %}
-                <img src="{{ restaurant.image.url }}" alt="{{ restaurant.name }}" class="restaurant-image">
-                {% else %}
-                <div class="restaurant-image" style="background-color: #f8f9fa; display: flex; align-items: center; justify-content: center;">
-                    <i class="fas fa-utensils" style="font-size: 48px; color: #FF6B6B; opacity: 0.3;"></i>
-                </div>
-                {% endif %}
-                
-                <div class="restaurant-status {{ restaurant.is_open|yesno:'open,closed' }}">
-                    {{ restaurant.is_open|yesno:'Ouvert,Fermé' }}
-                </div>
-                
-                <div class="restaurant-info">
-                    <h3 class="restaurant-name">{{ restaurant.name }}</h3>
-                    
-                    <div class="restaurant-city">
-                        <i class="fas fa-map-marker-alt"></i>
-                        <span>{{ restaurant.city.name }}</span>
+            
+            <!-- Grille de restaurants -->
+            <div class="restaurant-grid">
+                {% for restaurant in restaurants %}
+                    <div class="restaurant-card">
+                        <div class="restaurant-image">
+                            {% if restaurant.image %}
+                                <img src="{{ restaurant.image.url }}" alt="{{ restaurant.name }}">
+                            {% else %}
+                                <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80" alt="{{ restaurant.name }}">
+                            {% endif %}
+                            
+                            {% if restaurant.is_open %}
+                                <div class="status-badge status-open">Ouvert</div>
+                            {% else %}
+                                <div class="status-badge status-closed">Fermé</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="restaurant-content">
+                            <h3 class="restaurant-title">{{ restaurant.name }}</h3>
+                            <div class="restaurant-city">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <span>{{ restaurant.city.name }}</span>
+                            </div>
+                            
+                            <p class="restaurant-description">
+                                {{ restaurant.description|truncatechars:150 }}
+                            </p>
+                            
+                            <div class="restaurant-features">
+                                <div class="feature">
+                                    <i class="fas fa-utensils"></i>
+                                    <span>Cuisine marocaine</span>
+                                </div>
+                                <div class="feature">
+                                    <i class="fas fa-clock"></i>
+                                    <span>12:00 - 22:00</span>
+                                </div>
+                            </div>
+                            
+                            <div class="restaurant-footer">
+                                <div class="restaurant-rating">
+                                    <div class="stars">
+                                        {% with ''|center:restaurant.rating as range %}
+                                            {% for _ in range %}★{% endfor %}
+                                        {% endwith %}
+                                        {% with ''|center:5|slice:restaurant.rating as range %}
+                                            {% for _ in range %}☆{% endfor %}
+                                        {% endwith %}
+                                    </div>
+                                    <span class="rating-count">({{ restaurant.reviews_count|default:0 }})</span>
+                                </div>
+                                
+                                <div class="restaurant-buttons">
+                                    <a href="{% url 'restaurant_detail' restaurant.id %}" class="view-button">Voir</a>
+                                    <a href="{% url 'reservation' restaurant.id %}" class="reserve-button">Réserver</a>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <div class="restaurant-address">
-                        <i class="fas fa-location-dot"></i>
-                        <span>{{ restaurant.address }}</span>
+                {% empty %}
+                    <div class="no-results">
+                        <i class="fas fa-store-slash" style="font-size: 3rem; margin-bottom: 20px;"></i>
+                        <h3>Aucun restaurant ne correspond à votre recherche</h3>
+                        <p>Essayez d'autres critères de recherche</p>
                     </div>
-                    
-                    <div class="restaurant-phone">
-                        <i class="fas fa-phone"></i>
-                        <a href="tel:{{ restaurant.phone }}">{{ restaurant.phone }}</a>
-                    </div>
-                    
-                    <div class="restaurant-actions">
-                        <a href="{% url 'restaurant_detail' restaurant.id %}" class="btn">
-                            <i class="fas fa-info-circle"></i> Détails
-                        </a>
-                        {% if restaurant.website %}
-                        <a href="{{ restaurant.website }}" target="_blank" class="btn">
-                            <i class="fas fa-globe"></i> Site web
-                        </a>
-                        {% endif %}
-                    </div>
-                </div>
+                {% endfor %}
             </div>
-            {% empty %}
-            <div class="empty-state" style="grid-column: 1 / -1;">
-                <i class="fas fa-utensils pulse"></i>
-                <h3>Aucun restaurant trouvé</h3>
-                <p>Essayez de modifier vos filtres pour voir plus de résultats.</p>
-            </div>
-            {% endfor %}
         </section>
     </div>
     
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // ThreeJS Setup
-            const container = document.querySelector('.scene-container');
-            const scene = new THREE.Scene();
-            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-            camera.position.z = 20;
-            
-            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setClearColor(0xffffff, 0); // transparent background
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            container.appendChild(renderer.domElement);
-
-            // Add lights
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-            scene.add(ambientLight);
-            
-            const pointLight = new THREE.PointLight(0xffffff, 1);
-            pointLight.position.set(10, 10, 10);
-            scene.add(pointLight);
-            
-            // Create food elements that will float in the background
-            const foodItems = [];
-            const foodCount = 15;
-            const radius = 20;
-            
-            // Function to create a simple plate with food
-            function createPlate() {
-                const group = new THREE.Group();
-                
-                // Create plate base
-                const plateGeometry = new THREE.CylinderGeometry(2, 2, 0.2, 32);
-                const plateMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2, metalness: 0.1 });
-                const plate = new THREE.Mesh(plateGeometry, plateMaterial);
-                
-                // Create plate rim
-                const rimGeometry = new THREE.TorusGeometry(2, 0.1, 16, 32);
-                const rimMaterial = new THREE.MeshStandardMaterial({ color: 0xe0e0e0, roughness: 0.3, metalness: 0.2 });
-                const rim = new THREE.Mesh(rimGeometry, rimMaterial);
-                rim.rotation.x = Math.PI / 2;
-                rim.position.y = 0.1;
-                
-                group.add(plate);
-                group.add(rim);
-                return group;
-            }
-            
-            // Function to create a simple bread roll
-            function createBread() {
-                const group = new THREE.Group();
-                
-                // Create the main bread shape
-                const breadGeometry = new THREE.SphereGeometry(1, 32, 32);
-                breadGeometry.scale(1, 0.6, 1);
-                const breadMaterial = new THREE.MeshStandardMaterial({ color: 0xe0bf81, roughness: 1, metalness: 0 });
-                const bread = new THREE.Mesh(breadGeometry, breadMaterial);
-                
-                // Create bread base (flat bottom)
-                const baseGeometry = new THREE.CylinderGeometry(1, 1, 0.2, 32);
-                const baseMaterial = new THREE.MeshStandardMaterial({ color: 0xd6b06b, roughness: 1, metalness: 0 });
-                const base = new THREE.Mesh(baseGeometry, baseMaterial);
-                base.position.y = -0.3;
-                
-                group.add(bread);
-                group.add(base);
-                return group;
-            }
-            
-            // Function to create a simple cup
-            function createCup() {
-                const group = new THREE.Group();
-                
-                // Cup body
-                const cupGeometry = new THREE.CylinderGeometry(0.8, 0.6, 1.5, 32);
-                const cupMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2, metalness: 0.1 });
-                const cup = new THREE.Mesh(cupGeometry, cupMaterial);
-                
-                // Cup handle
-                const handleGeometry = new THREE.TorusGeometry(0.4, 0.1, 16, 32, Math.PI);
-                const handleMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.2, metalness: 0.1 });
-                const handle = new THREE.Mesh(handleGeometry, handleMaterial);
-                handle.position.set(0.8, 0, 0);
-                handle.rotation.y = Math.PI / 2;
-                
-                group.add(cup);
-                group.add(handle);
-                return group;
-            }
-            
-            // Create different food items
-            const foodFactories = [createPlate, createBread, createCup];
-            
-            for (let i = 0; i < foodCount; i++) {
-                const factory = foodFactories[Math.floor(Math.random() * foodFactories.length)];
-                const food = factory();
-                
-                // Random position in a sphere
-                const theta = Math.random() * Math.PI * 2;
-                const phi = Math.acos(2 * Math.random() - 1);
-                const distance = radius * Math.cbrt(Math.random()); // cbrt for more uniform distribution
-                
-                food.position.x = distance * Math.sin(phi) * Math.cos(theta);
-                food.position.y = distance * Math.sin(phi) * Math.sin(theta);
-                food.position.z = distance * Math.cos(phi);
-                
-                // Random slow rotation
-                food.userData = {
-                    rotationSpeed: {
-                        x: (Math.random() - 0.5) * 0.01,
-                        y: (Math.random() - 0.5) * 0.01,
-                        z: (Math.random() - 0.5) * 0.01
-                    },
-                    orbitSpeed: (Math.random() + 0.5) * 0.001,
-                    orbitRadius: distance,
-                    orbitAngle: Math.random() * Math.PI * 2,
-                    orbitY: food.position.y
-                };
-                
-                scene.add(food);
-                foodItems.push(food);
-            }
-            
-            // Animation loop
-            function animate() {
-                requestAnimationFrame(animate);
-                
-                foodItems.forEach(food => {
-                    // Apply rotation
-                    food.rotation.x += food.userData.rotationSpeed.x;
-                    food.rotation.y += food.userData.rotationSpeed.y;
-                    food.rotation.z += food.userData.rotationSpeed.z;
-                    
-                    // Orbit movement
-                    food.userData.orbitAngle += food.userData.orbitSpeed;
-                    food.position.x = Math.cos(food.userData.orbitAngle) * food.userData.orbitRadius;
-                    food.position.z = Math.sin(food.userData.orbitAngle) * food.userData.orbitRadius;
-                });
-                
-                renderer.render(scene, camera);
-            }
-            
-            // Handle window resize
-            window.addEventListener('resize', function() {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            });
-            
-            // Initialize GSAP animations
-            gsap.registerPlugin(ScrollTrigger);
-            
-            // Animate hero section
-            gsap.to('.hero', {
-                opacity: 1,
-                y: 0,
-                duration: 1,
-                ease: 'power3.out'
-            });
-            
-            // Animate filters
-            gsap.to('.filters', {
-                opacity: 1,
-                y: 0,
-                duration: 0.8,
-                delay: 0.3,
-                ease: 'power3.out'
-            });
-            
-            // Animate restaurant cards with stagger
-            gsap.to('.restaurant-card', {
-                opacity: 1,
-                y: 0,
-                duration: 0.6,
-                stagger: 0.1,
-                ease: 'power3.out',
-                delay: 0.5
-            });
-            
-            // ScrollTrigger for restaurant cards
-            gsap.utils.toArray('.restaurant-card').forEach((card, index) => {
-                gsap.from(card, {
-                    scrollTrigger: {
-                        trigger: card,
-                        start: 'top bottom-=100px',
-                        toggleActions: 'play none none none'
-                    },
-                    y: 50,
-                    opacity: 0,
-                    duration: 0.8,
-                    delay: index * 0.1,
-                    ease: 'power3.out'
-                });
-            });
-            
-            // Submit form on change for filters
-            document.querySelectorAll('#filter-form select').forEach(select => {
-                select.addEventListener('change', () => {
-                    document.getElementById('filter-form').submit();
-                });
-            });
-            
-            // Submit form on input after delay for search
-            const searchInput = document.getElementById('search');
-            if (searchInput) {
-                let timeout = null;
-                searchInput.addEventListener('input', () => {
-                    clearTimeout(timeout);
-                    timeout = setTimeout(() => {
-                        document.getElementById('filter-form').submit();
-                    }, 500);
-                });
-            }
-            
-            // Start the animation loop
-            animate();
-        });
-    </script>
+    <script src="{% static 'foodapp/js/main.js' %}"></script>
 </body>
 </html> 

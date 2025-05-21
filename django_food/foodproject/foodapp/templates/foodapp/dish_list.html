@@ -1,188 +1,291 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dishes in {{ selected_city.name|default:"All Cities" }}</title>
-    {% load static %}
-    <link rel="stylesheet" href="{% static 'foodapp/css/style.css' %}">
-</head>
-<body>
-    <div class="home-button-container">
-        <div class="nav-buttons">
-            <a href="{% url 'index' %}" class="home-button">
-                <span class="home-icon">🏠</span>
-                Home
-            </a>
-            <a href="{% url 'currency_converter' %}" class="home-button">
-                <span class="home-icon">💱</span>
-                Converter
-            </a>
-        </div>
+{% extends "foodapp/base.html" %}
+{% load static %}
+
+{% block title %}Plats | FoodFlex{% endblock %}
+{% block page_title %}Découvrez nos Plats{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dishes-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 30px;
+        margin-top: 30px;
+    }
+    
+    .dish-card {
+        background: var(--card-bg);
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: var(--card-shadow);
+        transition: all 0.3s ease;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .dish-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+    }
+    
+    .dish-image {
+        height: 200px;
+        width: 100%;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .dish-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.5s ease;
+    }
+    
+    .dish-card:hover .dish-image img {
+        transform: scale(1.1);
+    }
+    
+    .dish-badges {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .dish-badge {
+        background: var(--gradient);
+        color: white;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+    
+    .badge-vegetarian {
+        background: linear-gradient(45deg, #4CAF50, #8BC34A);
+    }
+    
+    .badge-vegan {
+        background: linear-gradient(45deg, #009688, #4CAF50);
+    }
+    
+    .badge-price-L {
+        background: linear-gradient(45deg, #2196F3, #03A9F4);
+    }
+    
+    .badge-price-M {
+        background: linear-gradient(45deg, #FF9800, #FFC107);
+    }
+    
+    .badge-price-H {
+        background: linear-gradient(45deg, #FF5722, #F44336);
+    }
+    
+    .dish-content {
+        padding: 20px;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .dish-title {
+        margin: 0 0 10px;
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--text-primary);
+    }
+    
+    .dish-description {
+        color: var(--text-secondary);
+        margin-bottom: 20px;
+        font-size: 14px;
+        line-height: 1.5;
+        flex-grow: 1;
+    }
+    
+    .dish-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        padding-top: 15px;
+        margin-top: auto;
+    }
+    
+    .dish-type {
+        font-size: 14px;
+        color: var(--text-secondary);
+    }
+    
+    .dish-button {
+        background: var(--gradient);
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 50px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: transform 0.2s ease;
+    }
+    
+    .dish-button:hover {
+        transform: scale(1.05);
+    }
+    
+    .filters-section {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 20px;
+        margin-bottom: 30px;
+        padding: 20px;
+        background: var(--card-bg);
+        border-radius: 15px;
+        box-shadow: var(--card-shadow);
+    }
+    
+    .sorting {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+    
+    .sort-button {
+        background: rgba(255, 255, 255, 0.1);
+        border: none;
+        padding: 10px 20px;
+        border-radius: 50px;
+        cursor: pointer;
+        color: var(--text-primary);
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .sort-button.active {
+        background: var(--gradient);
+        color: white;
+    }
+    
+    .sort-button:hover:not(.active) {
+        background: rgba(255, 255, 255, 0.2);
+    }
+    
+    .city-filter {
+        flex-grow: 1;
+        max-width: 300px;
+    }
+    
+    .city-select {
+        width: 100%;
+        padding: 10px 15px;
+        border-radius: 50px;
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: var(--text-primary);
+        font-size: 16px;
+        appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right 15px center;
+        padding-right: 40px;
+    }
+    
+    .city-select:focus {
+        outline: none;
+        border-color: var(--primary-color);
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        background: var(--card-bg);
+        border-radius: 15px;
+        margin-top: 30px;
+    }
+    
+    .empty-icon {
+        font-size: 50px;
+        margin-bottom: 20px;
+        color: var(--text-secondary);
+    }
+    
+    .empty-title {
+        font-size: 24px;
+        margin-bottom: 10px;
+    }
+    
+    .empty-description {
+        color: var(--text-secondary);
+        margin-bottom: 30px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="filters-section">
+    <div class="sorting">
+        <span>Trier par:</span>
+        <a href="?sort=name{% if selected_city %}&city={{ selected_city }}{% endif %}" class="sort-button {% if current_sort == 'name' %}active{% endif %}">Nom</a>
+        <a href="?sort=price_asc{% if selected_city %}&city={{ selected_city }}{% endif %}" class="sort-button {% if current_sort == 'price_asc' %}active{% endif %}">Prix croissant</a>
+        <a href="?sort=price_desc{% if selected_city %}&city={{ selected_city }}{% endif %}" class="sort-button {% if current_sort == 'price_desc' %}active{% endif %}">Prix décroissant</a>
     </div>
     
-    {% if selected_city %}
-    <div class="city-header">
-        {% if selected_city.image %}
-            <div class="city-banner" style="background-image: url('{{ selected_city.image.url }}')">
-                <div class="city-info">
-                    <h1>{{ selected_city.name }}</h1>
-                    <p>{{ selected_city.description }}</p>
-                </div>
-            </div>
-        {% endif %}
+    <div class="city-filter">
+        <form action="" method="get" id="city-filter-form">
+            <input type="hidden" name="sort" value="{{ current_sort }}">
+            <select name="city" id="city-filter" class="city-select" onchange="this.form.submit()">
+                <option value="">Toutes les villes</option>
+                {% for city in cities %}
+                <option value="{{ city.id }}" {% if selected_city == city.id|stringformat:"s" %}selected{% endif %}>{{ city.name }}</option>
+                {% endfor %}
+            </select>
+        </form>
     </div>
-    {% else %}
-        <h1 class="main-title">Explore Our Dishes</h1>
-    {% endif %}
+</div>
 
-    <div class="container">
-        <div class="filter-section">
-            <div class="filter-header">
-                <h2>🔍 Filter Your Dishes</h2>
+{% if dishes %}
+<div class="dishes-container">
+    {% for dish in dishes %}
+    <div class="dish-card">
+        <div class="dish-image">
+            {% if dish.image %}
+                <img src="{{ dish.image.url }}" alt="{{ dish.name }}">
+            {% else %}
+                <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c" alt="{{ dish.name }}">
+            {% endif %}
+            
+            <div class="dish-badges">
+                {% if dish.is_vegetarian %}<span class="dish-badge badge-vegetarian">Végétarien</span>{% endif %}
+                {% if dish.is_vegan %}<span class="dish-badge badge-vegan">Végétalien</span>{% endif %}
+                <span class="dish-badge badge-price-{{ dish.price_range }}">{{ dish.get_price_range_display }}</span>
             </div>
-            <form method="get" class="filter-form">
-                <div class="filter-group">
-                    <div class="filter-category">
-                        <h3>📍 Location</h3>
-                        <div class="select-wrapper">
-                            {{ form.city }}
-                        </div>
-                    </div>
-                    <div class="filter-category">
-                        <h3>🍽️ Type of Dish</h3>
-                        <div class="select-wrapper">
-                            {{ form.type }}
-                        </div>
-                    </div>
-                </div>
-
-                <div class="filter-group">
-                    <div class="filter-category">
-                        <h3>🥗 Dietary Preferences</h3>
-                        <div class="dietary-selector">
-                            <div class="dietary-option">
-                                <input type="checkbox" id="vegetarian" name="is_vegetarian"
-                                       {% if request.GET.is_vegetarian %}checked{% endif %}>
-                                <label for="vegetarian" class="dietary-label">
-                                    <span class="icon">🥬</span>
-                                    <span class="title">Vegetarian</span>
-                                    <span class="description">No meat products</span>
-                                </label>
-                            </div>
-                            <div class="dietary-option">
-                                <input type="checkbox" id="vegan" name="is_vegan"
-                                       {% if request.GET.is_vegan %}checked{% endif %}>
-                                <label for="vegan" class="dietary-label">
-                                    <span class="icon">🌱</span>
-                                    <span class="title">Vegan</span>
-                                    <span class="description">No animal products</span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="filter-category">
-                        <h3>💰 Price Range</h3>
-                        <div class="price-selector">
-                            {% for value, label in form.price_range.field.choices %}
-                            <div class="price-option">
-                                <input type="checkbox" id="price_{{ value }}" name="price_range" value="{{ value }}"
-                                       {% if value in request.GET.price_range %}checked{% endif %}>
-                                <label for="price_{{ value }}" class="price-label">
-                                    <span class="icon">{% if value == 'low' %}💰{% elif value == 'medium' %}💰💰{% else %}💰💰💰{% endif %}</span>
-                                    <span class="title">{{ label }}</span>
-                                    <span class="description">{% if value == 'low' %}Budget friendly{% elif value == 'medium' %}Moderate{% else %}Premium{% endif %}</span>
-                                </label>
-                            </div>
-                            {% endfor %}
-                        </div>
-                    </div>
-                </div>
-                <div class="filter-group">
-                    <div class="filter-category">
-                        <h3>⚠️ Health Restrictions</h3>
-                        <div class="health-selector">
-                            <div class="health-option">
-                                <input type="checkbox" 
-                                       id="{{ form.bad_for_cholesterol.id_for_label }}"
-                                       name="{{ form.bad_for_cholesterol.html_name }}"
-                                       {% if form.bad_for_cholesterol.value %}checked{% endif %}
-                                       class="health-checkbox">
-                                <label for="{{ form.bad_for_cholesterol.id_for_label }}" class="health-label">
-                                    <span class="icon">❤️</span>
-                                    <span class="title">Cholesterol Issues</span>
-                                </label>
-                            </div>
-                            
-                            <div class="health-option">
-                                <input type="checkbox" 
-                                       id="{{ form.bad_for_sugar.id_for_label }}"
-                                       name="{{ form.bad_for_sugar.html_name }}"
-                                       {% if form.bad_for_sugar.value %}checked{% endif %}
-                                       class="health-checkbox">
-                                <label for="{{ form.bad_for_sugar.id_for_label }}" class="health-label">
-                                    <span class="icon">🍯</span>
-                                    <span class="title">Diabetes</span>
-                                </label>
-                            </div>
-
-                            <div class="health-option">
-                                <input type="checkbox" 
-                                       id="{{ form.bad_for_lactose.id_for_label }}"
-                                       name="{{ form.bad_for_lactose.html_name }}"
-                                       {% if form.bad_for_lactose.value %}checked{% endif %}
-                                       class="health-checkbox">
-                                <label for="{{ form.bad_for_lactose.id_for_label }}" class="health-label">
-                                    <span class="icon">🥛</span>
-                                    <span class="title">Lactose Intolerant</span>
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <button type="submit" class="filter-button">Apply Filters</button>
-            </form>
         </div>
-
-        <div class="dishes-grid">
-            {% for dish in dishes %}
-                <div class="dish-card">
-                    <a href="{% url 'dish_detail' dish.id %}" class="dish-link">
-                        <div class="dish-image-container">
-                        {% if dish.image %}
-                            <img src="{{ dish.image.url }}" alt="{{ dish.name }}" class="dish-image">
-                        {% else %}
-                            <div class="dish-image-placeholder"></div>
-                        {% endif %}
-                        </div>
-                        <div class="dish-details">
-                            <div class="dish-header">
-                                <h3>{{ dish.name }}</h3>
-                                <p class="dish-city-name">{{ dish.city.name }}</p>
-                            </div>
-                            <div class="dish-tags">
-                                <span class="dish-type-badge">{{ dish.get_type_display }}</span>
-                                <span class="price-badge">{{ dish.get_price_range_display }}</span>
-                            </div>
-                            <div class="dish-warnings">
-                                {% if dish.bad_for_cholesterol %}
-                                    <span class="warning">⚠️ High Cholesterol</span>
-                                {% endif %}
-                                {% if dish.bad_for_sugar %}
-                                    <span class="warning">⚠️ High Sugar</span>
-                                {% endif %}
-                                {% if dish.bad_for_lactose %}
-                                    <span class="warning">⚠️ Contains Lactose</span>
-                                {% endif %}
-                            </div>
-                        </div>
-                    </a>
-                </div>
-            {% empty %}
-                <div class="no-results">No dishes found matching your criteria.</div>
-            {% endfor %}
+        
+        <div class="dish-content">
+            <h3 class="dish-title">{{ dish.name }}</h3>
+            <p class="dish-description">{{ dish.description|truncatechars:150 }}</p>
+            
+            <div class="dish-footer">
+                <span class="dish-type">{{ dish.get_type_display }}</span>
+                <a href="{% url 'dish_detail' dish.id %}" class="dish-button">Voir détails</a>
+            </div>
         </div>
     </div>
-</body>
-</html>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon"><i class="fas fa-utensils"></i></div>
+    <h2 class="empty-title">Aucun plat disponible</h2>
+    <p class="empty-description">Aucun plat ne correspond à vos critères de recherche.</p>
+    <a href="{% url 'dish_list' %}" class="dish-button">Voir tous les plats</a>
+</div>
+{% endif %}
+{% endblock %} 

@@ -178,6 +178,193 @@
         .view-all:hover {
             color: var(--secondary-color);
         }
+        
+        /* Styles spécifiques à la page d'accueil */
+        .food-categories {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .food-category {
+            background: var(--card-bg);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .food-category:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
+            border-color: var(--primary-color);
+        }
+        
+        .category-image {
+            height: 120px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .category-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+        
+        .food-category:hover .category-image img {
+            transform: scale(1.1);
+        }
+        
+        .category-name {
+            padding: 15px;
+            font-weight: 600;
+            color: var(--accent-color);
+        }
+        
+        .category-description {
+            color: var(--text-secondary);
+            font-size: 13px;
+            padding: 0 15px 15px;
+        }
+        
+        /* Style pour rendre l'avatar utilisateur cliquable */
+        .avatar-link {
+            display: block;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        
+        .avatar-link .user-avatar {
+            transition: all 0.3s ease;
+        }
+        
+        .avatar-link:hover .user-avatar {
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(255, 107, 107, 0.5);
+        }
+
+        /* Animation pour le badge "Nouveau" du forum */
+        .badge.pulse {
+            animation: pulse 1.5s infinite;
+            background: linear-gradient(45deg, #FF6B6B, #FF1E4C);
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.05);
+                opacity: 0.8;
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        /* Forum 3D Card */
+        .forum-3d-card {
+            perspective: 1000px;
+            margin: 40px auto;
+            max-width: 800px;
+            height: 300px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: all 0.5s ease;
+        }
+
+        .forum-3d-card:hover {
+            transform: rotateX(5deg) rotateY(5deg);
+        }
+
+        .forum-3d-card-inner {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #4a23a9, #a92387);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3), 0 0 25px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-align: center;
+            overflow: hidden;
+        }
+
+        .forum-3d-card-inner::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(rgba(255, 255, 255, 0.1) 10%, transparent 20%);
+            background-size: 25px 25px;
+            transform: rotate(30deg);
+            z-index: 0;
+        }
+
+        .forum-3d-card-title {
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 15px;
+            position: relative;
+            z-index: 1;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .forum-3d-card-content {
+            font-size: 18px;
+            line-height: 1.5;
+            margin-bottom: 25px;
+            position: relative;
+            z-index: 1;
+            max-width: 90%;
+        }
+
+        .forum-3d-button {
+            position: relative;
+            z-index: 1;
+            background: white;
+            color: #a92387;
+            font-weight: 700;
+            padding: 12px 30px;
+            border-radius: 50px;
+            text-decoration: none;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            text-transform: uppercase;
+        }
+
+        .forum-3d-button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .forum-3d-icon {
+            position: absolute;
+            font-size: 180px;
+            opacity: 0.1;
+            z-index: 0;
+            right: 30px;
+            bottom: -30px;
+            transform: rotate(-10deg);
+        }
     </style>
 </head>
 <body>
@@ -195,28 +382,33 @@
                 <i class="fas fa-times"></i>
             </button>
         </div>
-        </div>    <!-- Sidebar -->    <div class="app-sidebar">        <div class="logo">            <img src="{% static 'foodapp/img/logo.png' %}" alt="FoodFlex Logo" onerror="this.src='https://via.placeholder.com/120x40/FF6B6B/FFFFFF?text=FoodFlex'">        </div>        <div class="sidebar-links">            <a href="{% url 'accueil' %}" class="sidebar-link active">                <div class="sidebar-icon"><i class="fas fa-home"></i></div>                <div class="sidebar-label">Accueil</div>            </a>            <a href="{% url 'dish_list' %}" class="sidebar-link">                <div class="sidebar-icon"><i class="fas fa-utensils"></i></div>                <div class="sidebar-label">Plats</div>            </a>            <a href="{% url 'restaurants' %}" class="sidebar-link">                <div class="sidebar-icon"><i class="fas fa-store"></i></div>                <div class="sidebar-label">Restaurants</div>            </a>            <a href="#" class="sidebar-link">                <div class="sidebar-icon"><i class="fas fa-map-marker-alt"></i></div>                <div class="sidebar-label">Villes</div>                <div class="badge">5</div>            </a>            <a href="#" class="sidebar-link">                <div class="sidebar-icon"><i class="fas fa-heart"></i></div>                <div class="sidebar-label">Favoris</div>            </a>            <a href="#" class="sidebar-link">                <div class="sidebar-icon"><i class="fas fa-calendar-alt"></i></div>                <div class="sidebar-label">Réservations</div>            </a>            <a href="#" class="sidebar-link">                <div class="sidebar-icon"><i class="fas fa-cog"></i></div>                <div class="sidebar-label">Paramètres</div>            </a>        </div>        <div class="sidebar-bottom">            <div class="theme-switch">                <label class="theme-switch-toggle">                    <input type="checkbox" checked>                    <span class="theme-switch-slider"></span>                </label>                <div class="theme-mode-label">Mode Sombre</div>            </div>            <div class="user-profile">                <div class="user-avatar">                    {% if user.is_authenticated %}                        {{ user.username|make_list|first|upper }}                    {% else %}                        <i class="fas fa-user"></i>                    {% endif %}                </div>                <div class="user-info">                    <div class="user-name">                        {% if user.is_authenticated %}                            {{ user.username }}                        {% else %}                            Invité                        {% endif %}                    </div>                    <div class="user-status">                        {% if user.is_authenticated %}                            En ligne                        {% else %}                            Non connecté                        {% endif %}                    </div>                </div>            </div>        </div>    </div>    <!-- Scene Container pour Three.js -->
+        </div>    <!-- Sidebar -->    <div class="app-sidebar">        <div class="logo">            <img src="{% static 'foodapp/img/logo.png' %}" alt="FoodFlex Logo" onerror="this.src='https://via.placeholder.com/120x40/FF6B6B/FFFFFF?text=FoodFlex'">        </div>        <div class="sidebar-links">            <a href="{% url 'accueil' %}" class="sidebar-link active">                <div class="sidebar-icon"><i class="fas fa-home"></i></div>                <div class="sidebar-label">Accueil</div>            </a>            <a href="{% url 'dish_list' %}" class="sidebar-link">                <div class="sidebar-icon"><i class="fas fa-utensils"></i></div>                <div class="sidebar-label">Plats</div>            </a>            <a href="{% url 'restaurants' %}" class="sidebar-link restaurant-link">                <div class="sidebar-icon"><i class="fas fa-store"></i></div>                <div class="sidebar-label">Restaurants</div>            </a>            <a href="{% url 'user_reservations_list' %}" class="sidebar-link">                <div class="sidebar-icon"><i class="fas fa-calendar-alt"></i></div>                <div class="sidebar-label">Réservations</div>            </a>            <a href="{% url 'moroccan_cuisine' %}" class="sidebar-link">                <div class="sidebar-icon"><i class="fas fa-globe-africa"></i></div>                <div class="sidebar-label">Cuisine Marocaine</div>                <div class="badge">Nouveau</div>            </a>            <a href="{% url 'forum_topics_list' %}" class="sidebar-link forum-link">                <div class="sidebar-icon"><i class="fas fa-comments"></i></div>                <div class="sidebar-label">Forum</div>                <div class="badge pulse">Nouveau</div>            </a>            <a href="#" class="sidebar-link">                <div class="sidebar-icon"><i class="fas fa-heart"></i></div>                <div class="sidebar-label">Favoris</div>            </a>            <a href="{% url 'user_profile' %}" class="sidebar-link">                <div class="sidebar-icon"><i class="fas fa-user"></i></div>                <div class="sidebar-label">Profil</div>            </a>            <a href="#" class="sidebar-link">                <div class="sidebar-icon"><i class="fas fa-cog"></i></div>                <div class="sidebar-label">Paramètres</div>            </a>        </div>        <div class="sidebar-bottom">            <div class="theme-switch">                <label class="theme-switch-toggle">                    <input type="checkbox" checked>                    <span class="theme-switch-slider"></span>                </label>                <div class="theme-mode-label">Mode Sombre</div>            </div>            <div class="user-profile">                <a href="{% if user.is_authenticated %}{% url 'user_profile' %}{% else %}{% url 'login' %}{% endif %}" class="avatar-link">                    <div class="user-avatar">                        {% if user.is_authenticated %}                            {{ user.username|make_list|first|upper }}                        {% else %}                            <i class="fas fa-user"></i>                        {% endif %}                    </div>                </a>                <div class="user-info">                    <div class="user-name">                        {% if user.is_authenticated %}                            {{ user.username }}                        {% else %}                            Invité                        {% endif %}                    </div>                    <div class="user-status">                        {% if user.is_authenticated %}                            En ligne                        {% else %}                            Non connecté                        {% endif %}                    </div>                </div>            </div>        </div>    </div>    <!-- Scene Container pour Three.js -->
     <div class="scene-container"></div>
     
     <!-- Conteneur principal de l'application -->
     <div class="user-menu">
-        <a href="{% url 'index' %}" class="user-btn">Login</a>
-        <a href="{% url 'index' %}" class="user-btn">Sign Up</a>
+        {% if user.is_authenticated %}
+            <a href="{% url 'user_profile' %}" class="user-btn"><i class="fas fa-user"></i> Mon Profil</a>
+            <a href="{% url 'logout' %}" class="user-btn"><i class="fas fa-sign-out-alt"></i> Déconnexion</a>
+        {% else %}
+            <a href="{% url 'login' %}" class="user-btn"><i class="fas fa-sign-in-alt"></i> Connexion</a>
+            <a href="{% url 'signup' %}" class="user-btn"><i class="fas fa-user-plus"></i> Inscription</a>
+        {% endif %}
     </div>
     
     <div class="app-container">
         <!-- Hero Section -->
         <section class="hero-section animate-in">
             <div class="logo-container">
-                <img src="{% static 'foodapp/images/logo.png' %}" alt="FoodFlex">
+                <img src="{% static 'foodapp/images/logo.png' %}" alt="FoodFlex" onerror="this.src='https://via.placeholder.com/180x60/FF6B6B/FFFFFF?text=FoodFlex'">
             </div>
             <h1 class="hero-title">Découvrez une Nouvelle Expérience Culinaire</h1>
             <p class="hero-subtitle">
-                Explorez une sélection unique de restaurants et de plats, gérez vos commandes et profitez d'une expérience gastronomique exceptionnelle.
+                Explorez une sélection unique de restaurants et de plats traditionnels marocains, gérez vos réservations et profitez d'une expérience gastronomique exceptionnelle.
             </p>
             <div class="cta-buttons">
-                <button class="cta-button primary">Commencer</button>
-                <button class="cta-button secondary">En savoir plus</button>
+                <a href="{% url 'restaurants' %}" class="cta-button primary">Explorer les restaurants</a>
+                <a href="{% url 'dish_list' %}" class="cta-button secondary">Découvrir les plats</a>
             </div>
         </section>
         
@@ -232,16 +424,16 @@
                     <div class="slide-content">
                         <h3>{{ dish.name }}</h3>
                         <p>{{ dish.description|truncatechars:100 }}</p>
-                        <a href="{% url 'dish_detail' dish.id %}" class="btn btn-primary">View Details</a>
+                        <a href="{% url 'dish_detail' dish.id %}" class="btn">Voir détails</a>
                     </div>
                 </div>
                 {% empty %}
                 <div class="swiper-slide">
                     <img src="https://images.unsplash.com/photo-1555939594-58d7cb561ad1" alt="Featured Dish">
                     <div class="slide-content">
-                        <h3>Delicious Cuisine</h3>
-                        <p>Explore our wide range of culinary delights from around the world</p>
-                        <a href="{% url 'dish_list' %}" class="btn btn-primary">Browse All</a>
+                        <h3>Délicieuse Cuisine</h3>
+                        <p>Explorez notre large gamme de délices culinaires du monde entier</p>
+                        <a href="{% url 'dish_list' %}" class="btn">Tout parcourir</a>
                     </div>
                 </div>
                 {% endfor %}
@@ -249,41 +441,79 @@
             <div class="swiper-pagination"></div>
         </div>
         
-        <!-- Section caractéristiques -->
-        <section id="features" class="features-section">
-            <h2 class="section-title">Main Features</h2>
-            <div class="features-grid">
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-utensils"></i>
-                    </div>
-                    <h3 class="feature-title">Culinary Diversity</h3>
-                    <p class="feature-description">Explore dishes from different cuisines and cultures, each with authentic recipes and quality ingredients.</p>
-                </div>
-                
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-map-marker-alt"></i>
-                    </div>
-                    <h3 class="feature-title">Local Restaurants</h3>
-                    <p class="feature-description">Discover the best restaurants in your city with customized filters based on your food preferences.</p>
-                </div>
-                
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-heart"></i>
-                    </div>
-                    <h3 class="feature-title">Health Options</h3>
-                    <p class="feature-description">Filters for special diets, allergies, and dietary restrictions for a personalized experience.</p>
+        <!-- Forum Section 3D -->
+        <section class="featured-section">
+            <div class="section-header">
+                <h2 class="section-title">Rejoignez Notre Communauté</h2>
+                <a href="{% url 'forum_topics_list' %}" class="view-all">Voir le forum</a>
+            </div>
+            
+            <div class="forum-3d-card animate-in">
+                <div class="forum-3d-card-inner">
+                    <i class="fas fa-comments forum-3d-icon"></i>
+                    <h3 class="forum-3d-card-title">Forum Communautaire</h3>
+                    <p class="forum-3d-card-content">Partagez vos expériences culinaires, découvrez de nouvelles recettes, posez vos questions et connectez-vous avec d'autres passionnés de cuisine marocaine.</p>
+                    <a href="{% url 'forum_topics_list' %}" class="forum-3d-button">Rejoindre la discussion</a>
                 </div>
             </div>
         </section>
         
-        <section class="trending-section">
-            <div class="section-header">
-                <h2 class="section-title">Trending Dishes</h2>
-                <a href="{% url 'dish_list' %}" class="view-all">View All <i class="fas fa-arrow-right"></i></a>
+        <!-- Catégories culinaires -->
+        <section class="featured-section">
+            <h2 class="section-title">Catégories Culinaires</h2>
+            <div class="food-categories">
+                <div class="food-category">
+                    <div class="category-image">
+                        <img src="https://images.unsplash.com/photo-1541518763669-27fef9a23fcd?ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80" alt="Tajine">
+                    </div>
+                    <div class="category-name">Tajine</div>
+                    <div class="category-description">Plats traditionnels cuits lentement dans un récipient en terre cuite.</div>
+                </div>
+                <div class="food-category">
+                    <div class="category-image">
+                        <img src="https://images.unsplash.com/photo-1577715447734-bf00957c5d33?ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80" alt="Couscous">
+                    </div>
+                    <div class="category-name">Couscous</div>
+                    <div class="category-description">Semoule de blé vapeur servie avec légumes et viandes.</div>
+                </div>
+                <div class="food-category">
+                    <div class="category-image">
+                        <img src="https://images.unsplash.com/photo-1607620624312-d7eb0c40e2c5?ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80" alt="Pastilla">
+                    </div>
+                    <div class="category-name">Pastilla</div>
+                    <div class="category-description">Feuilleté sucré-salé au poulet ou au pigeon et aux amandes.</div>
+                </div>
+                <div class="food-category">
+                    <div class="category-image">
+                        <img src="https://images.unsplash.com/photo-1582201957428-5ff47f99512a?ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80" alt="Méchoui">
+                    </div>
+                    <div class="category-name">Méchoui</div>
+                    <div class="category-description">Agneau entier rôti à la broche, plat de célébration.</div>
+                </div>
+                <div class="food-category">
+                    <div class="category-image">
+                        <img src="https://images.unsplash.com/photo-1490556821123-b1485d2ee543?ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80" alt="Desserts">
+                    </div>
+                    <div class="category-name">Pâtisseries</div>
+                    <div class="category-description">Délicieux gâteaux marocains au miel, aux dattes et aux amandes.</div>
+                </div>
+                <div class="food-category">
+                    <div class="category-image">
+                        <img src="https://images.unsplash.com/photo-1560847683-92babd632e09?ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80" alt="Thé">
+                    </div>
+                    <div class="category-name">Thé à la menthe</div>
+                    <div class="category-description">Boisson traditionnelle à base de thé vert et de menthe fraîche.</div>
+                </div>
             </div>
+        </section>
+        
+        <!-- Plats populaires -->
+        <section class="featured-section">
+            <div class="section-header">
+                <h2 class="section-title">Plats Populaires</h2>
+                <a href="{% url 'dish_list' %}" class="view-all">Voir tout</a>
+            </div>
+            
             <div class="paladium-cards">
                 {% for dish in dishes %}
                 <div class="paladium-card">
@@ -291,85 +521,33 @@
                         {% if dish.image %}
                             <img src="{{ dish.image.url }}" alt="{{ dish.name }}">
                         {% else %}
-                            <img src="https://images.unsplash.com/photo-1559847844-5315695dadae" alt="{{ dish.name }}">
+                            <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c" alt="{{ dish.name }}">
                         {% endif %}
-                        <span class="card-badge">{{ dish.get_price_range_display }}</span>
+                        {% if dish.is_vegetarian %}
+                            <div class="card-badge">Végétarien</div>
+                        {% endif %}
                     </div>
                     <div class="card-content">
                         <h3 class="card-title">{{ dish.name }}</h3>
-                        <p class="card-description">{{ dish.description|truncatechars:100 }}</p>
+                        <p class="card-description">{{ dish.description|truncatechars:80 }}</p>
                         <div class="card-footer">
-                            <span class="card-price">{{ dish.city.name }}</span>
-                            <a href="{% url 'dish_detail' dish.id %}" class="card-button">View</a>
+                            <div class="card-price">{{ dish.get_price_range_display }}</div>
+                            <a href="{% url 'dish_detail' dish.id %}" class="card-button">Voir</a>
                         </div>
                     </div>
                 </div>
                 {% empty %}
-                <div class="paladium-card">
-                    <div class="card-image">
-                        <img src="https://images.unsplash.com/photo-1513104890138-7c749659a591" alt="Italian Pizza">
-                        <span class="card-badge">$$</span>
-                    </div>
-                    <div class="card-content">
-                        <h3 class="card-title">Italian Pizza</h3>
-                        <p class="card-description">Classic pizza with tomatoes, mozzarella and basil</p>
-                        <div class="card-footer">
-                            <span class="card-price">Rome</span>
-                            <a href="{% url 'dish_list' %}" class="card-button">View</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="paladium-card">
-                    <div class="card-image">
-                        <img src="https://images.unsplash.com/photo-1568901346375-23c9450c58cd" alt="Moroccan Tagine">
-                        <span class="card-badge">$$$</span>
-                    </div>
-                    <div class="card-content">
-                        <h3 class="card-title">Moroccan Tagine</h3>
-                        <p class="card-description">Traditional Moroccan tagine with olives and preserved lemons</p>
-                        <div class="card-footer">
-                            <span class="card-price">Marrakech</span>
-                            <a href="{% url 'dish_list' %}" class="card-button">View</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="paladium-card">
-                    <div class="card-image">
-                        <img src="https://images.unsplash.com/photo-1551024709-8f23befc6f87" alt="Sushi Platter">
-                        <span class="card-badge">$$$</span>
-                    </div>
-                    <div class="card-content">
-                        <h3 class="card-title">Sushi Platter</h3>
-                        <p class="card-description">Assortment of fresh sushi and sashimi with wasabi and soy sauce</p>
-                        <div class="card-footer">
-                            <span class="card-price">Tokyo</span>
-                            <a href="{% url 'dish_list' %}" class="card-button">View</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="paladium-card">
-                    <div class="card-image">
-                        <img src="https://images.unsplash.com/photo-1579684947550-22e945225d9a" alt="French Croissant">
-                        <span class="card-badge">$</span>
-                    </div>
-                    <div class="card-content">
-                        <h3 class="card-title">French Croissant</h3>
-                        <p class="card-description">Buttery, flaky viennoiserie pastry of Austrian origin</p>
-                        <div class="card-footer">
-                            <span class="card-price">Paris</span>
-                            <a href="{% url 'dish_list' %}" class="card-button">View</a>
-                        </div>
-                    </div>
-                </div>
+                <p>Aucun plat disponible.</p>
                 {% endfor %}
             </div>
         </section>
         
-        <section class="cities-section">
+        <!-- Villes -->
+        <section class="featured-section">
             <div class="section-header">
-                <h2 class="section-title">Explore Cities</h2>
-                <a href="#" class="view-all">View All <i class="fas fa-arrow-right"></i></a>
+                <h2 class="section-title">Découvrir par Villes</h2>
             </div>
+            
             <div class="paladium-cards">
                 {% for city in cities %}
                 <div class="paladium-card">
@@ -377,71 +555,20 @@
                         {% if city.image %}
                             <img src="{{ city.image.url }}" alt="{{ city.name }}">
                         {% else %}
-                            <img src="https://images.unsplash.com/photo-1534430480872-3498386e7856" alt="{{ city.name }}">
+                            <img src="https://images.unsplash.com/photo-1477959858617-67f85cf4f1df" alt="{{ city.name }}">
                         {% endif %}
                     </div>
                     <div class="card-content">
                         <h3 class="card-title">{{ city.name }}</h3>
-                        <p class="card-description">{{ city.description|truncatechars:100 }}</p>
+                        <p class="card-description">Découvrez les restaurants et plats traditionnels de {{ city.name }}.</p>
                         <div class="card-footer">
-                            <span class="card-price">{{ city.restaurants.count }} Restaurants</span>
-                            <a href="{% url 'dish_list' %}?city={{ city.id }}" class="card-button">Explore</a>
+                            <div class="card-price">{{ city.restaurant_count }} restaurants</div>
+                            <a href="{% url 'restaurants' %}?city={{ city.id }}" class="card-button">Explorer</a>
                         </div>
                     </div>
                 </div>
                 {% empty %}
-                <div class="paladium-card">
-                    <div class="card-image">
-                        <img src="https://images.unsplash.com/photo-1534430480872-3498386e7856" alt="Paris">
-                    </div>
-                    <div class="card-content">
-                        <h3 class="card-title">Paris</h3>
-                        <p class="card-description">Explore the city of lights and its renowned culinary scene</p>
-                        <div class="card-footer">
-                            <span class="card-price">15 Restaurants</span>
-                            <a href="{% url 'dish_list' %}" class="card-button">Explore</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="paladium-card">
-                    <div class="card-image">
-                        <img src="https://images.unsplash.com/photo-1543832923-44667a44c804" alt="Tokyo">
-                    </div>
-                    <div class="card-content">
-                        <h3 class="card-title">Tokyo</h3>
-                        <p class="card-description">Discover the vibrant food culture of Japan's capital</p>
-                        <div class="card-footer">
-                            <span class="card-price">20 Restaurants</span>
-                            <a href="{% url 'dish_list' %}" class="card-button">Explore</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="paladium-card">
-                    <div class="card-image">
-                        <img src="https://images.unsplash.com/photo-1518391846015-55a9cc003b25" alt="Rome">
-                    </div>
-                    <div class="card-content">
-                        <h3 class="card-title">Rome</h3>
-                        <p class="card-description">Experience authentic Italian cuisine in the eternal city</p>
-                        <div class="card-footer">
-                            <span class="card-price">12 Restaurants</span>
-                            <a href="{% url 'dish_list' %}" class="card-button">Explore</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="paladium-card">
-                    <div class="card-image">
-                        <img src="https://images.unsplash.com/photo-1505761671935-60b3a7427bad" alt="New York">
-                    </div>
-                    <div class="card-content">
-                        <h3 class="card-title">New York</h3>
-                        <p class="card-description">Taste the diverse flavors of the Big Apple</p>
-                        <div class="card-footer">
-                            <span class="card-price">18 Restaurants</span>
-                            <a href="{% url 'dish_list' %}" class="card-button">Explore</a>
-                        </div>
-                    </div>
-                </div>
+                <p>Aucune ville disponible.</p>
                 {% endfor %}
             </div>
         </section>
@@ -552,4 +679,36 @@
             el.style.transform = 'translateY(20px)';
             observer.observe(el);
         });
-        </script>        <!-- Import du fichier main.js -->    <script src="{% static 'foodapp/js/main.js' %}"></script></body></html> 
+
+        // Script spécifique pour corriger le bouton restaurant et forum
+        document.addEventListener('DOMContentLoaded', () => {
+            const restaurantLink = document.querySelector('.restaurant-link');
+            if (restaurantLink) {
+                restaurantLink.addEventListener('click', (e) => {
+                    window.location.href = "{% url 'restaurants' %}";
+                });
+            }
+            
+            // Animation 3D pour la carte du forum
+            const forumCard = document.querySelector('.forum-3d-card');
+            if (forumCard) {
+                forumCard.addEventListener('mousemove', (e) => {
+                    const rect = forumCard.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    
+                    const centerX = rect.width / 2;
+                    const centerY = rect.height / 2;
+                    
+                    const rotateX = (y - centerY) / 20;
+                    const rotateY = (centerX - x) / 20;
+                    
+                    forumCard.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+                });
+                
+                forumCard.addEventListener('mouseleave', () => {
+                    forumCard.style.transform = 'perspective(1000px) rotateX(0) rotateY(0)';
+                });
+            }
+        });
+    </script>        <!-- Import du fichier main.js -->    <script src="{% static 'foodapp/js/main.js' %}"></script></body></html> 

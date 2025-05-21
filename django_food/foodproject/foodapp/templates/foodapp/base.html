@@ -1,0 +1,408 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}FoodFlex | Cuisine Marocaine{% endblock %}</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Scripts externes -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.5/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.5/ScrollTrigger.min.js"></script>
+    
+    <!-- Styles principaux -->
+    <link rel="stylesheet" href="{% static 'foodapp/css/accueil.css' %}">
+    <link rel="stylesheet" href="{% static 'foodapp/css/sidebar.css' %}">
+    
+    {% block extra_css %}{% endblock %}
+
+    <style>
+        /* Styles communs */
+        .app-content {
+            padding: 20px 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .section-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+            position: relative;
+            display: inline-block;
+        }
+        
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            width: 60px;
+            height: 4px;
+            background: var(--gradient);
+            border-radius: 2px;
+        }
+        
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 20px;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+        
+        .breadcrumb a {
+            color: var(--primary-color);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        
+        .breadcrumb a:hover {
+            color: var(--accent-color);
+        }
+        
+        .breadcrumb-separator {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            animation: fadeIn 0.5s ease-in-out;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .alert-success {
+            background-color: rgba(46, 213, 115, 0.15);
+            color: #2ed573;
+            border-left: 4px solid #2ed573;
+        }
+        
+        .alert-warning {
+            background-color: rgba(255, 209, 102, 0.15);
+            color: #ffd166;
+            border-left: 4px solid #ffd166;
+        }
+        
+        .alert-danger {
+            background-color: rgba(255, 107, 107, 0.15);
+            color: #ff6b6b;
+            border-left: 4px solid #ff6b6b;
+        }
+        
+        .alert-info {
+            background-color: rgba(78, 205, 196, 0.15);
+            color: #4ecdc4;
+            border-left: 4px solid #4ecdc4;
+        }
+        
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: translateY(-10px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+            border: none;
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        .btn-primary {
+            background: var(--gradient);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+        }
+        
+        .form-control {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-family: 'Poppins', sans-serif;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-bottom: 15px;
+            box-sizing: border-box;
+            outline: none;
+        }
+        
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(255, 107, 107, 0.2);
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .help-text {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+        
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin: 30px 0;
+        }
+        
+        .pagination-item {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--card-bg);
+            color: var(--text-secondary);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            box-shadow: var(--shadow);
+            font-weight: 600;
+        }
+        
+        .pagination-item:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: var(--text-primary);
+        }
+        
+        .pagination-item.active {
+            background: var(--gradient);
+            color: white;
+        }
+        
+        /* Bouton retour en haut */
+        .back-to-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: var(--gradient);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            z-index: 99;
+        }
+        
+        .back-to-top.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+    </style>
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <!-- Titlebar -->
+    <div class="titlebar">
+        <div class="titlebar-drag">FoodFlex | {% block page_title %}Réservations{% endblock %}</div>
+        <div class="window-controls">
+            <button class="window-control minimize">
+                <i class="fas fa-minus"></i>
+            </button>
+            <button class="window-control maximize">
+                <i class="fas fa-square"></i>
+            </button>
+            <button class="window-control close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="app-sidebar">
+        <div class="logo">
+            <img src="{% static 'foodapp/img/logo.png' %}" alt="FoodFlex Logo" onerror="this.src='https://via.placeholder.com/120x40/FF6B6B/FFFFFF?text=FoodFlex'">
+        </div>
+        <div class="sidebar-links">
+            <a href="{% url 'accueil' %}" class="sidebar-link {% if request.resolver_match.url_name == 'accueil' %}active{% endif %}">
+                <div class="sidebar-icon"><i class="fas fa-home"></i></div>
+                <div class="sidebar-label">Accueil</div>
+            </a>
+            <a href="{% url 'dish_list' %}" class="sidebar-link {% if request.resolver_match.url_name == 'dish_list' %}active{% endif %}">
+                <div class="sidebar-icon"><i class="fas fa-utensils"></i></div>
+                <div class="sidebar-label">Plats</div>
+            </a>
+            <a href="{% url 'restaurants' %}" class="sidebar-link {% if request.resolver_match.url_name == 'restaurants' %}active{% endif %}">
+                <div class="sidebar-icon"><i class="fas fa-store"></i></div>
+                <div class="sidebar-label">Restaurants</div>
+            </a>
+            <a href="{% url 'user_reservations_list' %}" class="sidebar-link {% if 'reservation' in request.resolver_match.url_name %}active{% endif %}">
+                <div class="sidebar-icon"><i class="fas fa-calendar-alt"></i></div>
+                <div class="sidebar-label">Réservations</div>
+            </a>
+            <a href="{% url 'moroccan_cuisine' %}" class="sidebar-link {% if request.resolver_match.url_name == 'moroccan_cuisine' %}active{% endif %}">
+                <div class="sidebar-icon"><i class="fas fa-globe-africa"></i></div>
+                <div class="sidebar-label">Cuisine Marocaine</div>
+                <div class="badge">Nouveau</div>
+            </a>
+            <a href="#" class="sidebar-link">
+                <div class="sidebar-icon"><i class="fas fa-heart"></i></div>
+                <div class="sidebar-label">Favoris</div>
+            </a>
+            <a href="{% url 'user_profile' %}" class="sidebar-link {% if request.resolver_match.url_name == 'user_profile' %}active{% endif %}">
+                <div class="sidebar-icon"><i class="fas fa-user"></i></div>
+                <div class="sidebar-label">Profil</div>
+            </a>
+            <a href="#" class="sidebar-link">
+                <div class="sidebar-icon"><i class="fas fa-cog"></i></div>
+                <div class="sidebar-label">Paramètres</div>
+            </a>
+        </div>
+        <div class="sidebar-bottom">
+            <div class="theme-switch">
+                <label class="theme-switch-toggle">
+                    <input type="checkbox" checked>
+                    <span class="theme-switch-slider"></span>
+                </label>
+                <div class="theme-mode-label">Mode Sombre</div>
+            </div>
+            <div class="user-profile">
+                <div class="user-avatar">
+                    {% if user.is_authenticated %}
+                        {{ user.username|make_list|first|upper }}
+                    {% else %}
+                        <i class="fas fa-user"></i>
+                    {% endif %}
+                </div>
+                <div class="user-info">
+                    <div class="user-name">
+                        {% if user.is_authenticated %}
+                            {{ user.username }}
+                        {% else %}
+                            Invité
+                        {% endif %}
+                    </div>
+                    <div class="user-status">
+                        {% if user.is_authenticated %}
+                            En ligne
+                        {% else %}
+                            Non connecté
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Menu utilisateur -->
+    <div class="user-menu">
+        {% if user.is_authenticated %}
+            <a href="{% url 'user_profile' %}" class="user-btn"><i class="fas fa-user"></i> Mon Profil</a>
+            <a href="{% url 'logout' %}" class="user-btn"><i class="fas fa-sign-out-alt"></i> Déconnexion</a>
+        {% else %}
+            <a href="{% url 'login' %}" class="user-btn"><i class="fas fa-sign-in-alt"></i> Connexion</a>
+            <a href="{% url 'signup' %}" class="user-btn"><i class="fas fa-user-plus"></i> Inscription</a>
+        {% endif %}
+    </div>
+    
+    <!-- Contenu principal -->
+    <div class="app-container">
+        <main class="app-content">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}">
+                        <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'warning' %}exclamation-triangle{% elif message.tags == 'danger' or message.tags == 'error' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    
+    <!-- Bouton retour en haut -->
+    <div class="back-to-top">
+        <i class="fas fa-arrow-up"></i>
+    </div>
+    
+    <!-- Scripts communs -->
+    <script src="{% static 'foodapp/js/main.js' %}"></script>
+    
+    <script>
+        // Gestion du bouton retour en haut
+        document.addEventListener('DOMContentLoaded', function() {
+            const backToTopBtn = document.querySelector('.back-to-top');
+            
+            window.addEventListener('scroll', () => {
+                if (window.pageYOffset > 300) {
+                    backToTopBtn.classList.add('visible');
+                } else {
+                    backToTopBtn.classList.remove('visible');
+                }
+            });
+            
+            backToTopBtn.addEventListener('click', () => {
+                window.scrollTo({
+                    top: 0,
+                    behavior: 'smooth'
+                });
+            });
+            
+            // Gestion des alertes
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(alert => {
+                setTimeout(() => {
+                    alert.style.opacity = '0';
+                    alert.style.transform = 'translateY(-10px)';
+                    setTimeout(() => {
+                        alert.remove();
+                    }, 500);
+                }, 5000);
+            });
+        });
+    </script>
+    
+    {% block scripts %}{% endblock %}
+</body>
+</html> 

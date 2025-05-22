@@ -48,6 +48,11 @@ a = Analysis(
         'django.contrib.staticfiles',
         'foodproject',
         'foodproject.foodapp',
+        'webview',
+        'socket',
+        'threading',
+        'time',
+        'subprocess',
     ],
     hookspath=[],
     hooksconfig={{}},
@@ -64,13 +69,17 @@ pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 exe = EXE(
     pyz,
     a.scripts,
+    a.binaries,
+    a.zipfiles,
+    a.datas,
     [],
-    exclude_binaries=True,
     name='FoodFlex',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
+    upx_exclude=[],
+    runtime_tmpdir=None,
     console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
@@ -79,33 +88,41 @@ exe = EXE(
     entitlements_file=None,
     icon='foodproject/static/foodapp/img/favicon.ico',
 )
-
-coll = COLLECT(
-    exe,
-    a.binaries,
-    a.zipfiles,
-    a.datas,
-    strip=False,
-    upx=True,
-    upx_exclude=[],
-    name='FoodFlex',
-)
 """
     
     # Écrire le fichier spec
     with open("FoodFlex.spec", "w") as f:
         f.write(spec_content)
     
-    # Exécuter PyInstaller
+    # Exécuter PyInstaller pour créer une application autonome
     print("Construction de l'application avec PyInstaller...")
     subprocess.check_call([
         "pyinstaller",
         "--noconfirm",
+        "--onefile",
         "FoodFlex.spec"
     ])
     
+    # Créer un fichier README pour l'installation
+    readme_content = """# FoodFlex - Application Autonome
+
+## Instructions d'installation
+
+1. Téléchargez et décompressez le fichier zip.
+2. Exécutez simplement "FoodFlex.exe" pour lancer l'application.
+3. Aucune installation de Python ou d'autres dépendances n'est requise.
+
+## Support
+
+En cas de problème, veuillez contacter l'équipe de support.
+"""
+
+    with open("dist/README.txt", "w", encoding="utf-8") as f:
+        f.write(readme_content)
+    
     print("L'application a été construite avec succès!")
-    print("Vous pouvez trouver l'application dans le dossier dist/FoodFlex")
+    print("Vous pouvez trouver l'application dans le fichier dist/FoodFlex.exe")
+    print("Partagez le fichier exe avec vos utilisateurs, ils n'auront pas besoin d'installer Python.")
 
 if __name__ == "__main__":
     build_app() 

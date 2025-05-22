@@ -39,8 +39,18 @@ def start_django_server():
     return process, port
 
 def create_window(url, title="FoodFlex - Cuisine Marocaine"):
-    # Créer la fenêtre principale
-    window = webview.create_window(title, url, width=1200, height=800)
+    # Créer la fenêtre principale avec les contrôles natifs de Windows
+    window = webview.create_window(
+        title, 
+        url, 
+        width=1200, 
+        height=800,
+        frameless=False,         # Utiliser le cadre système natif avec boutons de contrôle
+        easy_drag=False,         # Désactiver le drag personnalisé
+        fullscreen=False,
+        min_size=(800, 600),     # Taille minimale de la fenêtre
+        confirm_close=False      # Ne pas demander confirmation à la fermeture
+    )
     return window
 
 if __name__ == '__main__':
@@ -130,8 +140,8 @@ if __name__ == '__main__':
     </html>
     """
     
-    # Créer d'abord une fenêtre avec le splash screen
-    splash_window = webview.create_window('FoodFlex - Démarrage', html=splash_html, width=600, height=400, resizable=False, frameless=True)
+    # Créer d'abord une fenêtre avec le splash screen, avec cadre natif
+    splash_window = webview.create_window('FoodFlex - Démarrage', html=splash_html, width=600, height=400, resizable=False, frameless=False)
     
     # Variable pour stocker la fenêtre principale
     main_window = None
@@ -149,7 +159,7 @@ if __name__ == '__main__':
             
             url = f"http://127.0.0.1:{port}/accueil/"
             
-            # Créer la fenêtre principale
+            # Créer la fenêtre principale avec les contrôles natifs
             main_window = create_window(url)
             
             # Fermer la fenêtre de splash après un court délai
@@ -164,5 +174,5 @@ if __name__ == '__main__':
     # Définir le rappel lorsque la fenêtre de splash est chargée
     splash_window.events.loaded += on_loaded
     
-    # Démarrer l'application
-    webview.start(debug=False) 
+    # Démarrer l'application avec l'interface système native
+    webview.start(debug=False, gui='system') 

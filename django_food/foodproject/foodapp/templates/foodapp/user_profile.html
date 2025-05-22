@@ -326,6 +326,12 @@
                     </div>
                     
                     <button type="submit" class="btn-action">Mettre à jour mon profil</button>
+                    
+                    {% if user.is_superuser %}
+                    <a href="{% url 'admin:index' %}" class="btn-action" style="background-color: #417690; margin-left: 10px;">
+                        <i class="fas fa-cog"></i> Panel Admin Django
+                    </a>
+                    {% endif %}
                 </form>
             </div>
         </div>

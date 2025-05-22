@@ -80,6 +80,10 @@ class Dish(models.Model):
     
     # Champ pour suivre les utilisateurs qui ont vu ce plat
     viewed_by = models.ManyToManyField(User, related_name='viewed_dishes', blank=True)
+
+    # Champ pour identifier les plats créés via l'interface d'administration
+    is_admin_created = models.BooleanField(default=True, 
+                                         help_text="Indique si le plat a été créé via le panneau d'administration Django")
     
     def __str__(self):
         return self.name

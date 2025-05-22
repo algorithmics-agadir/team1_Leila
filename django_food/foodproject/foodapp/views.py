@@ -33,8 +33,9 @@ def index(request):
     return redirect('accueil')
 
 def accueil(request):
-    featured_dishes = Dish.objects.all().order_by('?')[:5]
-    dishes = Dish.objects.all().order_by('-id')[:8]
+    # Récupérer uniquement les plats créés via l'interface d'administration Django
+    featured_dishes = Dish.objects.filter(is_admin_created=True).order_by('?')[:5]
+    dishes = Dish.objects.filter(is_admin_created=True).order_by('-id')[:8]
     cities = City.objects.all()[:4]
     context = {
         'featured_dishes': featured_dishes,
@@ -73,7 +74,8 @@ def city_detail(request, city_id):
     return render(request, 'foodapp/city_detail.html', context)
 
 def dish_list(request):
-    dishes = Dish.objects.all()
+    # Récupérer uniquement les plats créés via l'interface d'administration Django
+    dishes = Dish.objects.filter(is_admin_created=True)
     sort_by = request.GET.get('sort', 'name')
     city_id = request.GET.get('city')
 
@@ -444,38 +446,39 @@ def dish_detail(request, dish_id):
     return render(request, 'foodapp/dish_detail.html', {
         'dish': dish
     })
-    
+
 def get_dishes(request):
     """
     Vue API optimisée pour renvoyer les plats avec mise en cache
     """
     # Vérifier si les données sont en cache
-    cache_key = 'all_dishes_data'
+    cache_key = 'admin_dishes_data'  # Clé modifiée pour distinguer des données précédentes
     dishes_data = cache.get(cache_key)
     
     if not dishes_data:
         # Si pas en cache, récupérer depuis la base de données
         start_time = time.time()
-        dishes = Dish.objects.select_related('city').all()
+        # Filtre pour ne récupérer que les plats créés via l'interface d'administration
+        dishes = Dish.objects.select_related('city').filter(is_admin_created=True)
         
         # Préparer les données pour la sérialisation JSON
         dishes_data = []
-        for dish in dishes:
+    for dish in dishes:
             dishes_data.append({
-                'id': dish.id,
-                'name': dish.name,
-                'description': dish.description,
+            'id': dish.id,
+            'name': dish.name,
+            'description': dish.description,
                 'price_range': dish.price_range,
                 'price_display': dish.get_price_range_display(),
                 'type': dish.type,
                 'type_display': dish.get_type_display(),
-                'image': dish.image.url if dish.image else '',
+            'image': dish.image.url if dish.image else '',
                 'is_vegetarian': dish.is_vegetarian,
                 'is_vegan': dish.is_vegan,
                 'ingredients': dish.ingredients,
                 'history': dish.history,
                 'preparation_steps': dish.preparation_steps,
-                'city': {
+            'city': {
                     'id': dish.city.id if dish.city else None,
                     'name': dish.city.name if dish.city else None
                 },
@@ -638,13 +641,13 @@ def signup_view(request):
             if User.objects.filter(username=username).exists():
                 if is_ajax:
                     return JsonResponse({'errors': {'username': "Ce nom d'utilisateur est déjà pris"}}, status=400)
-                else:
+            else:
                     return render(request, 'foodapp/signup.html', {'errors': {'username': "Ce nom d'utilisateur est déjà pris"}, 'cities': City.objects.all()})
             
             if User.objects.filter(email=email).exists():
                 if is_ajax:
                     return JsonResponse({'errors': {'email': "Cette adresse email est déjà utilisée"}}, status=400)
-                else:
+    else:
                     return render(request, 'foodapp/signup.html', {'errors': {'email': "Cette adresse email est déjà utilisée"}, 'cities': City.objects.all()})
             
             # Créer un nouvel utilisateur
@@ -788,14 +791,14 @@ def restaurant_signup_view(request):
                 return JsonResponse({'errors': {'email': "Cette adresse email est déjà utilisée"}}, status=400)
             
             # Récupérer les données essentielles du restaurant
-            restaurant_name = data.get('restaurant_name')
-            restaurant_city_id = data.get('restaurant_city')
-            restaurant_phone = data.get('restaurant_phone')
-            restaurant_address = data.get('restaurant_address')
-            
+                restaurant_name = data.get('restaurant_name')
+                restaurant_city_id = data.get('restaurant_city')
+                restaurant_phone = data.get('restaurant_phone')
+                restaurant_address = data.get('restaurant_address')
+                
             # Validation minimale (uniquement champs critiques)
-            if not restaurant_name or not restaurant_city_id or not restaurant_phone or not restaurant_address:
-                return JsonResponse({'errors': {'general': "Informations du restaurant incomplètes"}}, status=400)
+                if not restaurant_name or not restaurant_city_id or not restaurant_phone or not restaurant_address:
+                    return JsonResponse({'errors': {'general': "Informations du restaurant incomplètes"}}, status=400)
             
             # Utilisation d'une transaction atomique pour garantir la cohérence des données
             with transaction.atomic():
@@ -903,11 +906,20 @@ def moroccan_cuisine(request):
     """
     Vue spéciale pour montrer les plats marocains aux touristes
     """
-    # Récupérer les plats marocains recommandés aux touristes
-    recommended_dishes = Dish.objects.filter(origin=Dish.MOROCCAN, is_tourist_recommended=True)
+    # Récupérer uniquement les plats marocains créés depuis l'interface d'administration Django
     
-    # Tous les plats marocains
-    all_moroccan_dishes = Dish.objects.filter(origin=Dish.MOROCCAN)
+    # Récupérer les plats marocains recommandés aux touristes
+    recommended_dishes = Dish.objects.filter(
+        origin=Dish.MOROCCAN, 
+        is_tourist_recommended=True,
+        is_admin_created=True  # Uniquement les plats créés via le panneau d'administration
+    )
+    
+    # Tous les plats marocains créés par des administrateurs
+    all_moroccan_dishes = Dish.objects.filter(
+        origin=Dish.MOROCCAN,
+        is_admin_created=True  # Uniquement les plats créés via le panneau d'administration
+    )
     
     # Répartir les plats par type
     sweet_dishes = all_moroccan_dishes.filter(type=Dish.SWEET)
@@ -1526,7 +1538,7 @@ def create_order(request):
         restaurant_account = request.user.restaurant_account
         if not restaurant_account.is_active:
             return redirect('accueil')
-    except:
+            except:
         # Si l'utilisateur n'a pas de compte restaurant associé, le rediriger vers l'accueil
         return redirect('accueil')
     

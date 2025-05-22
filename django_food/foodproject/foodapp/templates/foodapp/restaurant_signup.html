@@ -78,27 +78,6 @@
         margin-top: 8px;
     }
     
-    .text-danger {
-        color: #e74c3c;
-    }
-    
-    .form-check {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 25px;
-    }
-    
-    .form-check input {
-        width: 18px;
-        height: 18px;
-    }
-    
-    .form-check label {
-        color: rgba(255, 255, 255, 0.8);
-        cursor: pointer;
-    }
-    
     .btn-signup {
         display: block;
         width: 100%;
@@ -146,10 +125,6 @@
         gap: 10px;
     }
     
-    .error-message i {
-        font-size: 18px;
-    }
-    
     .success-message {
         background-color: rgba(46, 204, 113, 0.2);
         color: #2ecc71;
@@ -160,53 +135,6 @@
         display: flex;
         align-items: center;
         gap: 10px;
-    }
-    
-    .success-message i {
-        font-size: 18px;
-    }
-    
-    .form-animation {
-        animation: fadeIn 0.5s ease-in-out;
-    }
-    
-    @keyframes fadeIn {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-    
-    .password-strength {
-        height: 5px;
-        background-color: rgba(255, 255, 255, 0.1);
-        border-radius: 5px;
-        margin-top: 10px;
-        overflow: hidden;
-    }
-    
-    .password-strength-meter {
-        height: 100%;
-        width: 0;
-        transition: width 0.3s ease, background-color 0.3s ease;
-    }
-    
-    .password-strength-text {
-        font-size: 12px;
-        margin-top: 5px;
-    }
-    
-    /* 3D Effect Elements */
-    .signup-scene {
-        position: relative;
-        height: 150px;
-        margin-bottom: 30px;
-        overflow: hidden;
-        border-radius: 10px;
     }
     
     /* Restaurant fields specific styling */
@@ -244,13 +172,20 @@
         transition: all 0.3s ease;
     }
     
-    .feature-checkbox:hover {
-        background-color: rgba(255, 255, 255, 0.1);
+    .info-alert {
+        background-color: rgba(52, 152, 219, 0.15);
+        border: 1px solid rgba(52, 152, 219, 0.3);
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
     }
     
-    .feature-checkbox input {
-        width: 16px;
-        height: 16px;
+    .info-alert i {
+        font-size: 24px;
+        color: #3498db;
     }
 </style>
 {% endblock %}
@@ -266,11 +201,14 @@
     </div>
     
     <div class="signup-container">
-        <div class="signup-scene" id="signup-scene">
-            <!-- Three.js scene will be rendered here -->
+        <div class="info-alert">
+            <i class="fas fa-bolt"></i>
+            <div>
+                <strong>Nouveau !</strong> Inscription restaurant optimisée - créez votre restaurant en quelques minutes !
+            </div>
         </div>
         
-        <div class="signup-form-wrapper form-animation">
+        <div class="signup-form-wrapper">
             <div class="form-header">
                 <h2>Inscrire votre restaurant</h2>
                 <p>Rejoignez la communauté FoodFlex pour promouvoir la cuisine marocaine</p>
@@ -300,10 +238,6 @@
                 <div class="form-group">
                     <label for="password" class="form-label">Mot de passe</label>
                     <input type="password" id="password" name="password" class="form-control" placeholder="Créez un mot de passe" required>
-                    <div class="password-strength">
-                        <div id="password-strength-meter" class="password-strength-meter"></div>
-                    </div>
-                    <div id="password-strength-text" class="password-strength-text"></div>
                 </div>
                 
                 <div class="form-group">
@@ -353,51 +287,12 @@
                         <label for="restaurant_description" class="form-label">Description</label>
                         <textarea id="restaurant_description" name="restaurant_description" class="form-control" rows="4" placeholder="Décrivez votre restaurant, sa cuisine, son ambiance..." required></textarea>
                     </div>
-                    
-                    <div class="form-group">
-                        <label for="restaurant_capacity" class="form-label">Capacité d'accueil</label>
-                        <input type="number" id="restaurant_capacity" name="restaurant_capacity" class="form-control" min="1" max="1000" value="50" required>
-                    </div>
-                    
-                    <div class="restaurant-features">
-                        <div class="feature-checkbox">
-                            <input type="checkbox" id="feature_wifi" name="features" value="wifi">
-                            <label for="feature_wifi">Wi-Fi</label>
-                        </div>
-                        <div class="feature-checkbox">
-                            <input type="checkbox" id="feature_terrace" name="features" value="terrace">
-                            <label for="feature_terrace">Terrasse</label>
-                        </div>
-                        <div class="feature-checkbox">
-                            <input type="checkbox" id="feature_delivery" name="features" value="delivery">
-                            <label for="feature_delivery">Livraison</label>
-                        </div>
-                        <div class="feature-checkbox">
-                            <input type="checkbox" id="feature_takeaway" name="features" value="takeaway">
-                            <label for="feature_takeaway">À emporter</label>
-                        </div>
-                        <div class="feature-checkbox">
-                            <input type="checkbox" id="feature_parking" name="features" value="parking">
-                            <label for="feature_parking">Parking</label>
-                        </div>
-                        <div class="feature-checkbox">
-                            <input type="checkbox" id="feature_accessible" name="features" value="accessible">
-                            <label for="feature_accessible">Accessible PMR</label>
-                        </div>
-                    </div>
                 </div>
                 
                 <div class="form-check">
                     <input type="checkbox" id="terms" name="terms" class="form-check-input" required>
                     <label for="terms" class="form-check-label">
-                        J'accepte les <a href="#" target="_blank">conditions d'utilisation</a> et la <a href="#" target="_blank">politique de confidentialité</a>
-                    </label>
-                </div>
-                
-                <div class="form-check">
-                    <input type="checkbox" id="verification" name="verification" class="form-check-input" required>
-                    <label for="verification" class="form-check-label">
-                        Je certifie être le propriétaire ou un représentant autorisé de ce restaurant
+                        J'accepte les <a href="#" target="_blank">conditions d'utilisation</a>
                     </label>
                 </div>
                 
@@ -409,207 +304,26 @@
                 
                 <div class="form-footer">
                     <p>Vous avez déjà un compte? <a href="{% url 'login' %}">Se connecter</a></p>
-                    <p>Vous êtes un utilisateur? <a href="{% url 'signup' %}">Inscription utilisateur</a></p>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
-
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Animation 3D avec Three.js
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / 150, 0.1, 1000);
-        
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-        renderer.setSize(document.getElementById('signup-scene').offsetWidth, 150);
-        renderer.setClearColor(0x000000, 0);
-        document.getElementById('signup-scene').appendChild(renderer.domElement);
-        
-        // Créer une scène avec des éléments 3D représentant un restaurant marocain
-        
-        // Table (cylindre plat)
-        const tableGeometry = new THREE.CylinderGeometry(1.5, 1.5, 0.1, 32);
-        const tableMaterial = new THREE.MeshBasicMaterial({ color: 0x995533 });
-        const table = new THREE.Mesh(tableGeometry, tableMaterial);
-        table.position.set(0, -0.8, 0);
-        scene.add(table);
-        
-        // Tajine
-        const tajineBaseGeometry = new THREE.CylinderGeometry(0.8, 0.9, 0.3, 32);
-        const tajineBaseMaterial = new THREE.MeshBasicMaterial({ color: 0xcc6633 });
-        const tajineBase = new THREE.Mesh(tajineBaseGeometry, tajineBaseMaterial);
-        tajineBase.position.set(-0.8, -0.5, 0);
-        scene.add(tajineBase);
-        
-        const tajineLidGeometry = new THREE.ConeGeometry(0.9, 0.8, 32);
-        const tajineLidMaterial = new THREE.MeshBasicMaterial({ color: 0xff8855 });
-        const tajineLid = new THREE.Mesh(tajineLidGeometry, tajineLidMaterial);
-        tajineLid.position.set(-0.8, 0.1, 0);
-        scene.add(tajineLid);
-        
-        // Théière
-        const teapotBodyGeometry = new THREE.SphereGeometry(0.6, 32, 16);
-        const teapotMaterial = new THREE.MeshBasicMaterial({ color: 0x4ecdc4 });
-        const teapotBody = new THREE.Mesh(teapotBodyGeometry, teapotMaterial);
-        teapotBody.position.set(0.8, -0.2, 0);
-        scene.add(teapotBody);
-        
-        const teapotSpoutGeometry = new THREE.CylinderGeometry(0.08, 0.15, 0.8, 16);
-        const teapotSpout = new THREE.Mesh(teapotSpoutGeometry, teapotMaterial);
-        teapotSpout.rotation.z = Math.PI / 4;
-        teapotSpout.position.set(1.2, -0.1, 0);
-        scene.add(teapotSpout);
-        
-        // Verres à thé
-        for (let i = 0; i < 3; i++) {
-            const glassGeometry = new THREE.CylinderGeometry(0.15, 0.12, 0.3, 16);
-            const glassMaterial = new THREE.MeshBasicMaterial({ 
-                color: 0xf7fff7,
-                transparent: true,
-                opacity: 0.6
-            });
-            const glass = new THREE.Mesh(glassGeometry, glassMaterial);
-            glass.position.set(i * 0.4 - 0.4, -0.6, 0.8);
-            scene.add(glass);
-            
-            // Contenu du thé
-            const teaGeometry = new THREE.CylinderGeometry(0.14, 0.11, 0.15, 16);
-            const teaMaterial = new THREE.MeshBasicMaterial({ color: 0xffab4c });
-            const tea = new THREE.Mesh(teaGeometry, teaMaterial);
-            tea.position.set(i * 0.4 - 0.4, -0.53, 0.8);
-            scene.add(tea);
-        }
-        
-        // Pain rond
-        const breadGeometry = new THREE.CylinderGeometry(0.5, 0.5, 0.1, 32);
-        const breadMaterial = new THREE.MeshBasicMaterial({ color: 0xeac086 });
-        const bread = new THREE.Mesh(breadGeometry, breadMaterial);
-        bread.position.set(0, -0.7, 0.5);
-        scene.add(bread);
-        
-        camera.position.z = 5;
-        camera.position.y = 0.5;
-        
-        // Animation des éléments
-        function animate() {
-            requestAnimationFrame(animate);
-            
-            // Faire légèrement flotter les objets
-            const time = Date.now() * 0.001;
-            
-            tajineLid.position.y = 0.1 + Math.sin(time) * 0.05;
-            teapotBody.position.y = -0.2 + Math.cos(time * 0.8) * 0.04;
-            teapotSpout.position.y = -0.1 + Math.cos(time * 0.8) * 0.04;
-            
-            // Rotation subtile des objets
-            tajineLid.rotation.y += 0.005;
-            teapotBody.rotation.y += 0.003;
-            
-            renderer.render(scene, camera);
-        }
-        
-        animate();
-        
-        // Ajustement de la taille du renderer lors du redimensionnement de la fenêtre
-        window.addEventListener('resize', function() {
-            renderer.setSize(document.getElementById('signup-scene').offsetWidth, 150);
-            camera.aspect = document.getElementById('signup-scene').offsetWidth / 150;
-            camera.updateProjectionMatrix();
-        });
-        
-        // Mesure de la force du mot de passe
-        const passwordInput = document.getElementById('password');
-        const strengthMeter = document.getElementById('password-strength-meter');
-        const strengthText = document.getElementById('password-strength-text');
-        
-        passwordInput.addEventListener('input', function() {
-            const password = this.value;
-            const strength = measurePasswordStrength(password);
-            
-            // Mettre à jour la barre de progression
-            strengthMeter.style.width = strength.score * 25 + '%';
-            
-            // Couleur en fonction de la force
-            if (strength.score === 0) {
-                strengthMeter.style.backgroundColor = '#e74c3c';
-                strengthText.textContent = "Trop faible";
-                strengthText.style.color = '#e74c3c';
-            } else if (strength.score === 1) {
-                strengthMeter.style.backgroundColor = '#e67e22';
-                strengthText.textContent = "Faible";
-                strengthText.style.color = '#e67e22';
-            } else if (strength.score === 2) {
-                strengthMeter.style.backgroundColor = '#f1c40f';
-                strengthText.textContent = "Moyen";
-                strengthText.style.color = '#f1c40f';
-            } else if (strength.score === 3) {
-                strengthMeter.style.backgroundColor = '#2ecc71';
-                strengthText.textContent = "Fort";
-                strengthText.style.color = '#2ecc71';
-            } else {
-                strengthMeter.style.backgroundColor = '#27ae60';
-                strengthText.textContent = "Très fort";
-                strengthText.style.color = '#27ae60';
-            }
-        });
-        
-        // Fonction pour mesurer la force du mot de passe
-        function measurePasswordStrength(password) {
-            let score = 0;
-            
-            if (password.length < 6) {
-                return { score: 0, feedback: "Mot de passe trop court" };
-            }
-            
-            // Longueur
-            if (password.length >= 8) score++;
-            if (password.length >= 10) score++;
-            
-            // Complexité
-            if (/[0-9]/.test(password)) score++;
-            if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++;
-            if (/[^a-zA-Z0-9]/.test(password)) score++;
-            
-            if (score > 4) score = 4;
-            
-            return { score: score };
-        }
-        
-        // Vérification de la correspondance des mots de passe
-        const confirmInput = document.getElementById('confirm_password');
-        
-        confirmInput.addEventListener('input', function() {
-            if (this.value === passwordInput.value) {
-                this.style.borderColor = '#2ecc71';
-                this.style.boxShadow = '0 0 0 2px rgba(46, 204, 113, 0.25)';
-            } else {
-                this.style.borderColor = '#e74c3c';
-                this.style.boxShadow = '0 0 0 2px rgba(231, 76, 60, 0.25)';
-            }
-        });
-        
         // Gestion du formulaire
         const signupForm = document.getElementById('restaurant-signup-form');
         
         signupForm.addEventListener('submit', function(event) {
             event.preventDefault();
             
-            // Collecte des valeurs des features (checkboxes)
-            const featuresCheckboxes = document.querySelectorAll('input[name="features"]:checked');
-            const selectedFeatures = Array.from(featuresCheckboxes).map(cb => cb.value);
-            
             // Validation de base côté client
             const username = document.getElementById('username').value;
             const email = document.getElementById('email').value;
-            const password = passwordInput.value;
-            const confirmPassword = confirmInput.value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm_password').value;
             const terms = document.getElementById('terms').checked;
-            const verification = document.getElementById('verification').checked;
             
             if (!username || !email || !password || !confirmPassword) {
                 showError("Veuillez remplir tous les champs obligatoires");
@@ -621,8 +335,8 @@
                 return;
             }
             
-            if (!terms || !verification) {
-                showError("Vous devez accepter toutes les conditions");
+            if (!terms) {
+                showError("Vous devez accepter les conditions");
                 return;
             }
             
@@ -646,7 +360,6 @@
             
             // Préparation des données
             const formData = new FormData(signupForm);
-            formData.append('features', JSON.stringify(selectedFeatures));
             
             const data = {};
             for (let [key, value] of formData.entries()) {
@@ -676,13 +389,10 @@
                     button.innerHTML = '<i class="fas fa-check"></i> Restaurant créé avec succès!';
                     button.style.backgroundColor = '#2ecc71';
                     
-                    // Afficher message de succès
-                    showSuccess("Votre compte restaurant a été créé avec succès! Vous allez être redirigé vers votre tableau de bord.");
-                    
                     // Redirection après un délai
                     setTimeout(() => {
                         window.location.href = '{% url "restaurant_dashboard" %}';
-                    }, 2000);
+                    }, 1000);
                 }
             })
             .catch(error => {
@@ -695,12 +405,10 @@
                     const errors = JSON.parse(error.message);
                     if (errors.username) showError(errors.username);
                     else if (errors.email) showError(errors.email);
-                    else if (errors.password) showError(errors.password);
-                    else if (errors.restaurant_name) showError(errors.restaurant_name);
                     else if (errors.general) showError(errors.general);
-                    else showError("Une erreur est survenue lors de la création du compte");
+                    else showError("Une erreur est survenue");
                 } catch (e) {
-                    showError("Une erreur est survenue lors de la création du compte");
+                    showError("Une erreur est survenue");
                 }
             });
         });
@@ -719,36 +427,6 @@
             // Insérer avant le formulaire
             const formElement = document.getElementById('restaurant-signup-form');
             formElement.parentNode.insertBefore(errorDiv, formElement);
-            
-            // Animation avec GSAP
-            gsap.from(errorDiv, {
-                y: -20,
-                opacity: 0,
-                duration: 0.3
-            });
-        }
-        
-        // Fonction pour afficher un message de succès
-        function showSuccess(message) {
-            // Supprimer les messages existants
-            const existingMessages = document.querySelectorAll('.error-message, .success-message');
-            existingMessages.forEach(msg => msg.remove());
-            
-            // Créer un nouvel élément de succès
-            const successDiv = document.createElement('div');
-            successDiv.className = 'success-message';
-            successDiv.innerHTML = `<i class="fas fa-check-circle"></i> ${message}`;
-            
-            // Insérer avant le formulaire
-            const formElement = document.getElementById('restaurant-signup-form');
-            formElement.parentNode.insertBefore(successDiv, formElement);
-            
-            // Animation avec GSAP
-            gsap.from(successDiv, {
-                y: -20,
-                opacity: 0,
-                duration: 0.3
-            });
         }
     });
 </script>

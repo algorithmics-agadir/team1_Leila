@@ -410,6 +410,18 @@
                 <a href="{% url 'restaurants' %}" class="cta-button primary">Explorer les restaurants</a>
                 <a href="{% url 'dish_list' %}" class="cta-button secondary">Découvrir les plats</a>
             </div>
+            
+            {% if user.is_authenticated and user.restaurant_account %}
+            <div class="restaurant-owner-panel" style="margin-top: 40px; padding: 20px; border-radius: 10px; background: rgba(255,107,107,0.2);">
+                <h2 style="color: var(--primary-color); margin-bottom: 15px;">Espace Restaurateur</h2>
+                <p>Bienvenue dans votre espace restaurateur ! Gérez les réservations et paramétrez votre établissement.</p>
+                <div style="margin-top: 20px;">
+                    <a href="{% url 'restaurant_dashboard' %}" class="cta-button primary">
+                        <i class="fas fa-tachometer-alt"></i> Accéder au tableau de bord
+                    </a>
+                </div>
+            </div>
+            {% endif %}
         </section>
         
         <div class="swiper mySwiper">
@@ -711,4 +723,4 @@
                 });
             }
         });
-    </script>        <!-- Import du fichier main.js -->    <script src="{% static 'foodapp/js/main.js' %}"></script></body></html> 
+        </script>        <!-- Import du fichier main.js -->    <script src="{% static 'foodapp/js/main.js' %}"></script></body></html> 

@@ -1,5 +1,5 @@
 {% extends "foodapp/base.html" %}
-{% load static %}
+    {% load static %}
 
 {% block title %}Plats | FoodFlex{% endblock %}
 {% block page_title %}Découvrez nos Plats{% endblock %}
@@ -257,17 +257,17 @@
         <div class="dish-image">
             {% if dish.image %}
                 <img src="{{ dish.image.url }}" alt="{{ dish.name }}">
-            {% else %}
+    {% else %}
                 <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c" alt="{{ dish.name }}">
-            {% endif %}
-            
+    {% endif %}
+
             <div class="dish-badges">
                 {% if dish.is_vegetarian %}<span class="dish-badge badge-vegetarian">Végétarien</span>{% endif %}
                 {% if dish.is_vegan %}<span class="dish-badge badge-vegan">Végétalien</span>{% endif %}
                 <span class="dish-badge badge-price-{{ dish.price_range }}">{{ dish.get_price_range_display }}</span>
-            </div>
-        </div>
-        
+                    </div>
+                </div>
+
         <div class="dish-content">
             <h3 class="dish-title">{{ dish.name }}</h3>
             <p class="dish-description">{{ dish.description|truncatechars:150 }}</p>
@@ -275,17 +275,17 @@
             <div class="dish-footer">
                 <span class="dish-type">{{ dish.get_type_display }}</span>
                 <a href="{% url 'dish_detail' dish.id %}" class="dish-button">Voir détails</a>
-            </div>
-        </div>
-    </div>
-    {% endfor %}
-</div>
-{% else %}
+                            </div>
+                        </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
 <div class="empty-state">
     <div class="empty-icon"><i class="fas fa-utensils"></i></div>
     <h2 class="empty-title">Aucun plat disponible</h2>
     <p class="empty-description">Aucun plat ne correspond à vos critères de recherche.</p>
     <a href="{% url 'dish_list' %}" class="dish-button">Voir tous les plats</a>
-</div>
-{% endif %}
+                            </div>
+                                {% endif %}
 {% endblock %} 

@@ -224,7 +224,7 @@
             color: var(--text-secondary);
             font-size: 13px;
         }
-        
+
         .restaurant-buttons {
             display: flex;
             gap: 10px;
@@ -370,7 +370,7 @@
             <a href="{% url 'login' %}" class="user-btn"><i class="fas fa-sign-in-alt"></i> Connexion</a>
             <a href="{% url 'signup' %}" class="user-btn"><i class="fas fa-user-plus"></i> Inscription</a>
         {% endif %}
-    </div>
+            </div>
     
     <!-- Contenu principal -->
     <div class="app-container">
@@ -382,7 +382,7 @@
                 <div class="search-box">
                     <span class="search-icon"><i class="fas fa-search"></i></span>
                     <input type="text" name="search" placeholder="Rechercher un restaurant..." class="search-input" value="{{ request.GET.search|default:'' }}">
-                </div>
+            </div>
                 
                 <div class="filter-group">
                     <label for="city">Ville:</label>
@@ -390,8 +390,8 @@
                         <option value="">Toutes les villes</option>
                         {% for city in cities %}
                             <option value="{{ city.id }}" {% if request.GET.city == city.id|stringformat:"i" %}selected{% endif %}>
-                                {{ city.name }}
-                            </option>
+                            {{ city.name }}
+                        </option>
                         {% endfor %}
                     </select>
                 </div>
@@ -407,32 +407,32 @@
                 
                 <button type="submit" class="filter-button">Filtrer</button>
             </form>
-            
+        
             <!-- Grille de restaurants -->
             <div class="restaurant-grid">
-                {% for restaurant in restaurants %}
-                    <div class="restaurant-card">
+            {% for restaurant in restaurants %}
+            <div class="restaurant-card">
                         <div class="restaurant-image">
-                            {% if restaurant.image %}
+                {% if restaurant.image %}
                                 <img src="{{ restaurant.image.url }}" alt="{{ restaurant.name }}">
-                            {% else %}
+                {% else %}
                                 <img src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?ixlib=rb-1.2.1&auto=format&fit=crop&w=1050&q=80" alt="{{ restaurant.name }}">
-                            {% endif %}
-                            
+                {% endif %}
+                
                             {% if restaurant.is_open %}
                                 <div class="status-badge status-open">Ouvert</div>
                             {% else %}
                                 <div class="status-badge status-closed">Fermé</div>
                             {% endif %}
-                        </div>
-                        
+                </div>
+                
                         <div class="restaurant-content">
                             <h3 class="restaurant-title">{{ restaurant.name }}</h3>
-                            <div class="restaurant-city">
-                                <i class="fas fa-map-marker-alt"></i>
-                                <span>{{ restaurant.city.name }}</span>
-                            </div>
-                            
+                    <div class="restaurant-city">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>{{ restaurant.city.name }}</span>
+                    </div>
+                    
                             <p class="restaurant-description">
                                 {{ restaurant.description|truncatechars:150 }}
                             </p>
@@ -446,8 +446,8 @@
                                     <i class="fas fa-clock"></i>
                                     <span>12:00 - 22:00</span>
                                 </div>
-                            </div>
-                            
+                    </div>
+                    
                             <div class="restaurant-footer">
                                 <div class="restaurant-rating">
                                     <div class="stars">
@@ -459,16 +459,16 @@
                                         {% endwith %}
                                     </div>
                                     <span class="rating-count">({{ restaurant.reviews_count|default:0 }})</span>
-                                </div>
-                                
+                    </div>
+                    
                                 <div class="restaurant-buttons">
                                     <a href="{% url 'restaurant_detail' restaurant.id %}" class="view-button">Voir</a>
                                     <a href="{% url 'reservation' restaurant.id %}" class="reserve-button">Réserver</a>
                                 </div>
-                            </div>
-                        </div>
                     </div>
-                {% empty %}
+                </div>
+            </div>
+            {% empty %}
                     <div class="no-results">
                         <i class="fas fa-store-slash" style="font-size: 3rem; margin-bottom: 20px;"></i>
                         <h3>Aucun restaurant ne correspond à votre recherche</h3>

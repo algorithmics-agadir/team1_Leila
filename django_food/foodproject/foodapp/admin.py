@@ -8,7 +8,8 @@ from .models import (
     UserProfile, 
     Review,
     ForumTopic,
-    ForumMessage
+    ForumMessage,
+    RestaurantDraft
 )
 from django.utils.html import format_html
 from django.contrib.auth.models import User
@@ -18,6 +19,7 @@ from django.shortcuts import redirect, render
 from django.urls import path
 from django import forms
 from django.contrib import messages
+from django.contrib.admin.widgets import AdminDateWidget
 
 # Register your models here.
 class DishInline(admin.TabularInline):
@@ -311,6 +313,36 @@ class ForumMessageAdmin(admin.ModelAdmin):
     list_filter = ('is_solution', 'created_at')
     search_fields = ('content', 'author__username', 'topic__title')
     readonly_fields = ('created_at', 'updated_at')
+
+@admin.register(RestaurantDraft)
+class RestaurantDraftAdmin(admin.ModelAdmin):
+    list_display = ('name', 'email', 'city', 'phone', 'created_at', 'converted_to_account')
+    list_filter = ('city', 'converted_to_account', 'created_at')
+    search_fields = ('name', 'email', 'phone')
+    date_hierarchy = 'created_at'
+    actions = ['convert_to_restaurants']
+    
+    def convert_to_restaurants(self, request, queryset):
+        converted = 0
+        for draft in queryset.filter(converted_to_account=False):
+            try:
+                restaurant, account, user = draft.convert_to_restaurant()
+                converted += 1
+            except Exception as e:
+                self.message_user(request, f"Erreur lors de la conversion de {draft.name}: {str(e)}", level=messages.ERROR)
+        
+        self.message_user(request, f"{converted} restaurant(s) créé(s) avec succès !")
+    convert_to_restaurants.short_description = "Convertir en restaurants"
+
+# Modifier RestaurantAdmin pour ajouter l'action de changement de type de compte
+class RestaurantAccountChangeTypeForm(forms.Form):
+    ACCOUNT_TYPE_CHOICES = RestaurantAccount.ACCOUNT_TYPE_CHOICES
+    account_type = forms.ChoiceField(choices=ACCOUNT_TYPE_CHOICES, label='Type de compte')
+    featured_until = forms.DateTimeField(
+        required=False, 
+        widget=AdminDateWidget(attrs={'type': 'date'}),
+        label='Mis en avant jusqu\'au'
+    )
 
 # Enregistrer les modèles dans l'interface d'administration
 admin.site.register(City, CityAdmin)

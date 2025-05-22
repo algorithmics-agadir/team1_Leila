@@ -5,6 +5,7 @@
 {% block page_title %}Découverte de la Cuisine Marocaine{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
 <style>
     .cuisine-header {
         background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url("{% static 'foodapp/images/moroccan-food-header.jpg' %}");
@@ -218,6 +219,46 @@
     .new-badge.pulse {
         animation: pulse 1.5s infinite;
     }
+    
+    /* Carte des régions culinaires */
+    #moroccan-map {
+        height: 400px;
+        width: 100%;
+        border-radius: 15px;
+        margin-bottom: 30px;
+        box-shadow: var(--card-shadow);
+    }
+    
+    .region-info {
+        background-color: var(--card-bg);
+        padding: 20px;
+        border-radius: 15px;
+        margin-top: 20px;
+        border-left: 4px solid var(--primary-color);
+    }
+    
+    .region-info h3 {
+        color: var(--primary-color);
+        margin-bottom: 15px;
+    }
+    
+    .region-info p {
+        margin-bottom: 10px;
+    }
+    
+    .region-specialties {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 15px;
+    }
+    
+    .region-specialty {
+        background-color: rgba(255, 255, 255, 0.05);
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-size: 14px;
+    }
 </style>
 {% endblock %}
 
@@ -242,6 +283,19 @@
             <li><i class="fas fa-clock"></i> <strong>Timing</strong> : Les restaurants servent souvent le dîner plus tard qu'en Europe, à partir de 19h30-20h.</li>
             <li><i class="fas fa-money-bill-wave"></i> <strong>Pourboire</strong> : Un pourboire de 10% est apprécié dans les restaurants touristiques.</li>
         </ul>
+    </div>
+    
+    <!-- Carte des régions culinaires du Maroc -->
+    <div class="section">
+        <h2 class="section-title">Carte des Régions Culinaires</h2>
+        <p>Explorez les différentes régions culinaires du Maroc et leurs spécialités gastronomiques. Cliquez sur les marqueurs pour découvrir les plats emblématiques de chaque région.</p>
+        
+        <div id="moroccan-map"></div>
+        
+        <div class="region-info" id="region-details">
+            <h3>Cliquez sur une région pour découvrir ses spécialités</h3>
+            <p>Chaque région du Maroc possède ses propres traditions culinaires, influencées par l'histoire, la géographie et les cultures locales.</p>
+        </div>
     </div>
     
     <div class="category-tabs">
@@ -438,8 +492,76 @@
     </div>
 </div>
 
+<script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Initialisation de la carte
+        const map = L.map('moroccan-map').setView([31.7917, -7.0926], 5);
+        
+        // Ajouter le fond de carte
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+        
+        // Données des régions culinaires
+        const regions = [
+            {
+                name: "Fès",
+                coords: [34.0181, -5.0078],
+                description: "Capitale gastronomique traditionnelle du Maroc",
+                specialties: ["Pastilla au pigeon", "Tajine de pruneaux", "Harira", "Cornes de gazelle"]
+            },
+            {
+                name: "Marrakech",
+                coords: [31.6295, -7.9811],
+                description: "Célèbre pour ses plats mijotés et ses épices",
+                specialties: ["Tanjia", "Couscous aux sept légumes", "Méchoui", "Briouats"]
+            },
+            {
+                name: "Essaouira",
+                coords: [31.5085, -9.7595],
+                description: "Cuisine côtière riche en fruits de mer",
+                specialties: ["Sardines grillées", "Tajine de poisson", "Amlou", "Pastilla aux fruits de mer"]
+            },
+            {
+                name: "Chefchaouen",
+                coords: [35.1672, -5.2564],
+                description: "Cuisine berbère des montagnes du Rif",
+                specialties: ["Bissara", "Pain rond traditionnel", "Tagine aux légumes", "Fromage de chèvre local"]
+            },
+            {
+                name: "Agadir",
+                coords: [30.4278, -9.5981],
+                description: "Cuisine du Sud influencée par les traditions berbères",
+                specialties: ["Poisson grillé", "Amlou", "Couscous au poisson", "Jus d'orange frais"]
+            },
+            {
+                name: "Ouarzazate",
+                coords: [30.9335, -6.9370],
+                description: "Cuisine du désert et des oasis",
+                specialties: ["Pain de sable", "Tajine aux dattes", "Couscous berbère", "Thé à la menthe"]
+            }
+        ];
+        
+        // Ajouter les marqueurs pour chaque région
+        regions.forEach(region => {
+            const marker = L.marker(region.coords)
+                .addTo(map)
+                .bindPopup(`<strong>${region.name}</strong>`);
+                
+            marker.on('click', function() {
+                // Mettre à jour les informations de la région
+                document.getElementById('region-details').innerHTML = `
+                    <h3>${region.name}</h3>
+                    <p>${region.description}</p>
+                    <h4>Spécialités locales:</h4>
+                    <div class="region-specialties">
+                        ${region.specialties.map(specialty => `<span class="region-specialty">${specialty}</span>`).join('')}
+                    </div>
+                `;
+            });
+        });
+        
         // Gestion des onglets de catégories
         const categoryTabs = document.querySelectorAll('.category-tab');
         const dishSections = document.querySelectorAll('.dish-section');

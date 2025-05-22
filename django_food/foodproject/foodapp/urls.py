@@ -1,61 +1,60 @@
 from django.urls import path
 from . import views
 from django.shortcuts import redirect
+from django.conf import settings
+from django.conf.urls.static import static
 
-# Fonction pour rediriger vers signup
-def redirect_to_signup(request):
-    return redirect('signup')
+# Fonction pour rediriger vers login
+def redirect_to_login(request):
+    return redirect('login')
 
 urlpatterns = [
+    # Pages principales
     path('', views.index, name='index'),
     path('accueil/', views.accueil, name='accueil'),
-    path('dishes/', views.dish_list, name='dish_list'),
-    path('dishes/<int:dish_id>/', views.dish_detail, name='dish_detail'),
-    path('currency/', views.currency_converter, name='currency_converter'),
     path('restaurants/', views.restaurants, name='restaurants'),
-    path('restaurants/<int:restaurant_id>/', views.restaurant_detail, name='restaurant_detail'),
-    path('restaurants/<int:restaurant_id>/reservation/', views.reservation, name='reservation'),
+    path('dish-list/', views.dish_list, name='dish_list'),
+    path('dish/<int:dish_id>/', views.dish_detail, name='dish_detail'),
+    
+    # Restaurant dashboard
+    path('restaurant/dashboard/', views.restaurant_dashboard, name='restaurant_dashboard'),
+    path('restaurant/orders/', views.restaurant_orders, name='restaurant_orders'),
+    path('restaurant/orders/live/', views.restaurant_orders_live, name='restaurant_orders_live'),  # Nouvelle route pour les commandes en temps réel
+    path('restaurant/stats/', views.restaurant_stats, name='restaurant_stats'),
+    path('restaurant/reviews/', views.restaurant_reviews, name='restaurant_reviews'),
+    path('restaurant/menu/', views.restaurant_dashboard, name='restaurant_menu'),  # Temporairement mappé vers dashboard
+    path('restaurant/menu/create/', views.restaurant_menu_create, name='restaurant_menu_create'),  # Nouvelle route pour créer un plat
+    path('restaurant/reservations/', views.restaurant_dashboard, name='restaurant_reservations'),  # Temporairement mappé vers dashboard
+    path('restaurant/settings/', views.restaurant_dashboard, name='restaurant_settings'),  # Temporairement mappé vers dashboard
+    
+    # API Restaurant
+    path('restaurant/create-order/', views.create_order, name='create_order'),  # Vue pour créer une commande
+    
+    # User routes
+    path('user/profile/', views.user_profile, name='user_profile'),
+    path('user/reservations/', views.user_reservations_list, name='user_reservations_list'),
+    path('user/settings/', views.user_settings, name='user_settings'),
+    
+    # Cuisine et spécialités
+    path('cuisine/moroccan/', views.moroccan_cuisine, name='moroccan_cuisine'),
+    
+    # Forum
+    path('forum/', views.dashboard, name='forum_topics_list'),  # Temporairement redirigé vers dashboard
+    
+    # API
     path('api/dishes/', views.get_dishes, name='api_dishes'),
     path('api/restaurants/', views.get_restaurants, name='api_restaurants'),
-    path('dashboard/', views.dashboard, name='dashboard'),
-    path('moroccan-cuisine/', views.moroccan_cuisine, name='moroccan_cuisine'),
-    path('signup/', views.signup_view, name='signup'),
-    path('restaurant-signup/', views.restaurant_signup_view, name='restaurant_signup'),
+    
+    # Auth
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
-    
-    # URL pour la déconnexion via /accounts/logout/ (compatibilité)
-    path('accounts/logout/', views.logout_view, name='accounts_logout'),
-    
-    # URL pour rediriger /accounts/login/ vers signup
-    path('accounts/login/', redirect_to_signup, name='accounts_login'),
-    
-    # URLs pour le tableau de bord restaurant
-    path('restaurant/dashboard/', views.restaurant_dashboard, name='restaurant_dashboard'),
-    path('api/reservation/<int:reservation_id>/status/', views.update_reservation_status, name='update_reservation_status'),
-    
-    # URL pour le profil utilisateur
-    path('profile/', views.user_profile, name='user_profile'),
-    
-    # URL pour les paramètres utilisateur
-    path('settings/', views.user_settings, name='user_settings'),
-    
-    # Nouvelles URLs pour les améliorations de réservation
-    path('reservations/', views.user_reservations_list, name='user_reservations_list'),
-    path('reservations/<int:reservation_id>/', views.reservation_detail, name='reservation_detail'),
-    path('reservations/<int:reservation_id>/cancel/', views.reservation_cancel, name='reservation_cancel'),
-    path('reservations/<int:reservation_id>/modify/', views.reservation_modify, name='reservation_modify'),
-    path('api/available-slots/<int:restaurant_id>/', views.available_slots, name='available_slots'),
-    
-    # Nouvelle URL pour marquer un plat comme vu
-    path('api/mark-dish-viewed/<int:dish_id>/', views.mark_dish_viewed, name='mark_dish_viewed'),
-    
-    # URLs pour le forum communautaire
-    path('forum/', views.forum_topics_list, name='forum_topics_list'),
-    path('forum/category/<str:category>/', views.forum_topics_by_category, name='forum_topics_by_category'),
-    path('forum/topic/<int:topic_id>/', views.forum_topic_detail, name='forum_topic_detail'),
-    path('forum/new-topic/', views.forum_new_topic, name='forum_new_topic'),
-    path('forum/topic/<int:topic_id>/reply/', views.forum_reply, name='forum_reply'),
-    path('forum/message/<int:message_id>/edit/', views.forum_edit_message, name='forum_edit_message'),
-    path('forum/message/<int:message_id>/delete/', views.forum_delete_message, name='forum_delete_message'),
-] 
+    path('signup/', views.signup_view, name='signup'),
+    path('restaurant-signup/', views.restaurant_signup_view, name='restaurant_signup'),  # Nouvelle route pour l'inscription restaurant
+
+    # Legal
+    path('privacy-policy/', views.privacy_policy, name='privacy_policy'),
+    path('terms-of-service/', views.terms_of_service, name='terms_of_service'),
+]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) 

@@ -1,8 +1,8 @@
 {% extends "foodapp/base.html" %}
 {% load static %}
 
-{% block title %}Tableau de bord | {{ restaurant.name }} | FoodFlex{% endblock %}
-{% block page_title %}Tableau de bord Restaurant{% endblock %}
+{% block title %}Réservations | {{ restaurant.name }} | FoodFlex{% endblock %}
+{% block page_title %}Gestion des réservations{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -132,12 +132,13 @@
         font-size: 14px;
     }
     
-    .reservations-today {
+    .card-content {
         background-color: var(--card-bg);
         border-radius: 15px;
         padding: 24px;
         box-shadow: var(--card-shadow);
         border: 1px solid rgba(255, 255, 255, 0.05);
+        margin-bottom: 24px;
     }
     
     .section-header {
@@ -145,94 +146,149 @@
         justify-content: space-between;
         align-items: center;
         margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
     
-    .today-reservations-list {
+    .section-header h2 {
         display: flex;
-        flex-direction: column;
-        gap: 15px;
-    }
-    
-    .reservation-card {
-        background-color: rgba(255, 255, 255, 0.03);
-        border-radius: 12px;
-        padding: 16px;
-        display: flex;
-        justify-content: space-between;
         align-items: center;
-        border-left: 4px solid transparent;
-        transition: all 0.3s ease;
+        gap: 10px;
+        margin: 0;
     }
     
-    .reservation-card:hover {
+    .filters {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+    
+    .filter-select {
         background-color: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        padding: 8px 15px;
+        color: #fff;
+        min-width: 180px;
     }
     
-    .reservation-card.status-pending {
+    .filter-select:focus {
+        outline: none;
+        border-color: var(--primary-color);
+    }
+    
+    .calendar-view {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 10px;
+        margin-bottom: 30px;
+    }
+    
+    .calendar-day {
+        background-color: rgba(255, 255, 255, 0.03);
+        border-radius: 10px;
+        padding: 12px;
+        min-height: 120px;
+        position: relative;
+    }
+    
+    .calendar-day-header {
+        text-align: center;
+        padding-bottom: 8px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        margin-bottom: 8px;
+    }
+    
+    .day-name {
+        font-weight: 600;
+        display: block;
+    }
+    
+    .day-date {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.7);
+    }
+    
+    .day-reservation {
+        background-color: rgba(255, 255, 255, 0.05);
+        border-radius: 6px;
+        padding: 6px 8px;
+        margin-bottom: 6px;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border-left: 3px solid transparent;
+    }
+    
+    .day-reservation:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .day-reservation.status-pending {
         border-left-color: #f1c40f;
     }
     
-    .reservation-card.status-confirmed {
+    .day-reservation.status-confirmed {
         border-left-color: #2ecc71;
     }
     
-    .reservation-card.status-canceled {
+    .day-reservation.status-canceled {
         border-left-color: #e74c3c;
         opacity: 0.7;
     }
     
-    .reservation-card.status-completed {
+    .day-reservation.status-completed {
         border-left-color: #3498db;
-        opacity: 0.7;
     }
     
-    .reservation-time {
+    .day-reservation-time {
         font-weight: 600;
-        font-size: 18px;
     }
     
-    .reservation-info {
+    .day-reservation-info {
         display: flex;
+        justify-content: space-between;
         align-items: center;
-        gap: 15px;
     }
     
-    .reservation-guest-info {
-        display: flex;
-        flex-direction: column;
+    .day-reservation-guests {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.8);
     }
     
-    .reservation-name {
-        font-weight: 600;
+    .reservation-table {
+        width: 100%;
+        border-collapse: collapse;
     }
     
-    .reservation-phone {
+    .reservation-table th {
+        text-align: left;
+        padding: 15px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         color: rgba(255, 255, 255, 0.7);
-        font-size: 14px;
+        font-weight: 500;
     }
     
-    .reservation-details {
-        display: flex;
-        align-items: center;
-        gap: 15px;
+    .reservation-table td {
+        padding: 15px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     }
     
-    .guest-count {
-        display: flex;
-        align-items: center;
-        gap: 5px;
-        background-color: rgba(255, 255, 255, 0.07);
-        padding: 6px 12px;
-        border-radius: 8px;
-        font-size: 14px;
+    .reservation-table tr:hover {
+        background-color: rgba(255, 255, 255, 0.02);
+    }
+    
+    .reservation-row {
+        cursor: pointer;
     }
     
     .status-badge {
-        padding: 6px 12px;
-        border-radius: 8px;
+        padding: 4px 10px;
+        border-radius: 20px;
         font-size: 12px;
         font-weight: 600;
-        text-transform: uppercase;
+        white-space: nowrap;
     }
     
     .status-pending {
@@ -300,55 +356,25 @@
         margin-bottom: 15px;
     }
     
-    .all-reservations {
-        background-color: var(--card-bg);
-        border-radius: 15px;
-        padding: 24px;
-        box-shadow: var(--card-shadow);
-        border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    
-    .filters {
-        display: flex;
-        gap: 15px;
-        margin-bottom: 20px;
-        flex-wrap: wrap;
-    }
-    
-    .filter-select {
-        background-color: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+    .btn {
+        padding: 10px 20px;
         border-radius: 8px;
-        padding: 8px 15px;
-        color: #fff;
-        min-width: 180px;
+        border: none;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
     }
     
-    .filter-select:focus {
-        outline: none;
-        border-color: var(--primary-color);
+    .btn-primary {
+        background-color: var(--primary-color);
+        color: white;
     }
     
-    .reservation-table {
-        width: 100%;
-        border-collapse: collapse;
-    }
-    
-    .reservation-table th {
-        text-align: left;
-        padding: 15px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        color: rgba(255, 255, 255, 0.7);
-        font-weight: 500;
-    }
-    
-    .reservation-table td {
-        padding: 15px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    
-    .reservation-table tr:hover {
-        background-color: rgba(255, 255, 255, 0.02);
+    .btn-primary:hover {
+        background-color: var(--primary-color-hover);
     }
     
     @media (max-width: 992px) {
@@ -359,6 +385,10 @@
         .sidebar {
             display: none;
         }
+        
+        .calendar-view {
+            grid-template-columns: repeat(3, 1fr);
+        }
     }
     
     @media (max-width: 768px) {
@@ -366,19 +396,8 @@
             grid-template-columns: 1fr 1fr;
         }
         
-        .reservation-info {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 8px;
-        }
-        
-        .reservation-table {
-            font-size: 14px;
-        }
-        
-        .reservation-table th:nth-child(3),
-        .reservation-table td:nth-child(3) {
-            display: none;
+        .calendar-view {
+            grid-template-columns: repeat(2, 1fr);
         }
     }
     
@@ -387,15 +406,12 @@
             grid-template-columns: 1fr;
         }
         
-        .reservation-details {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 8px;
+        .calendar-view {
+            grid-template-columns: 1fr;
         }
         
-        .reservation-table th:nth-child(4),
-        .reservation-table td:nth-child(4) {
-            display: none;
+        .filters {
+            flex-direction: column;
         }
     }
 </style>
@@ -406,7 +422,9 @@
     <div class="breadcrumb">
         <a href="{% url 'accueil' %}">Accueil</a>
         <span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
-        <span>Tableau de bord Restaurant</span>
+        <a href="{% url 'restaurant_dashboard' %}">Tableau de bord</a>
+        <span class="breadcrumb-separator"><i class="fas fa-chevron-right"></i></span>
+        <span>Réservations</span>
     </div>
 
     <div class="dashboard-container">
@@ -430,7 +448,7 @@
             </div>
             
             <nav class="sidebar-nav">
-                <a href="{% url 'restaurant_dashboard' %}" class="nav-link active">
+                <a href="{% url 'restaurant_dashboard' %}" class="nav-link">
                     <i class="fas fa-tachometer-alt"></i>
                     Vue d'ensemble
                 </a>
@@ -442,7 +460,7 @@
                     <i class="fas fa-clipboard-list"></i>
                     Menu
                 </a>
-                <a href="{% url 'restaurant_reservations' %}" class="nav-link">
+                <a href="{% url 'restaurant_reservations' %}" class="nav-link active">
                     <i class="fas fa-calendar-alt"></i>
                     Réservations
                 </a>
@@ -462,12 +480,12 @@
         </div>
         
         <div class="main-content">
-            <h1 class="page-title">Tableau de bord de {{ restaurant.name }}</h1>
+            <h1 class="page-title">Gestion des réservations</h1>
             
             <div class="stats-container">
                 <div class="stat-card">
                     <div class="stat-header">
-                        <h3>Réservations totales</h3>
+                        <h3>Total</h3>
                         <div class="stat-icon" style="background-color: rgba(52, 152, 219, 0.2); color: #3498db;">
                             <i class="fas fa-calendar-check"></i>
                         </div>
@@ -478,98 +496,93 @@
                 
                 <div class="stat-card">
                     <div class="stat-header">
-                        <h3>En attente</h3>
-                        <div class="stat-icon" style="background-color: rgba(241, 196, 15, 0.2); color: #f1c40f;">
+                        <h3>À venir</h3>
+                        <div class="stat-icon" style="background-color: rgba(46, 204, 113, 0.2); color: #2ecc71;">
                             <i class="fas fa-clock"></i>
                         </div>
                     </div>
-                    <div class="stat-value">{{ pending_reservations }}</div>
+                    <div class="stat-value">{{ upcoming_reservations }}</div>
                     <div class="stat-label">Réservations</div>
                 </div>
                 
                 <div class="stat-card">
                     <div class="stat-header">
-                        <h3>Confirmées</h3>
-                        <div class="stat-icon" style="background-color: rgba(46, 204, 113, 0.2); color: #2ecc71;">
-                            <i class="fas fa-check-circle"></i>
+                        <h3>Aujourd'hui</h3>
+                        <div class="stat-icon" style="background-color: rgba(241, 196, 15, 0.2); color: #f1c40f;">
+                            <i class="fas fa-calendar-day"></i>
                         </div>
                     </div>
-                    <div class="stat-value">{{ confirmed_reservations }}</div>
+                    <div class="stat-value">{{ today_reservations_count }}</div>
                     <div class="stat-label">Réservations</div>
                 </div>
                 
                 <div class="stat-card">
                     <div class="stat-header">
-                        <h3>Annulées</h3>
-                        <div class="stat-icon" style="background-color: rgba(231, 76, 60, 0.2); color: #e74c3c;">
-                            <i class="fas fa-times-circle"></i>
+                        <h3>Taux d'occupation</h3>
+                        <div class="stat-icon" style="background-color: rgba(155, 89, 182, 0.2); color: #9b59b6;">
+                            <i class="fas fa-chart-line"></i>
                         </div>
                     </div>
-                    <div class="stat-value">{{ canceled_reservations }}</div>
-                    <div class="stat-label">Réservations</div>
+                    <div class="stat-value">{{ occupancy_rate }}%</div>
+                    <div class="stat-label">Capacité moyenne</div>
                 </div>
             </div>
             
-            <div class="reservations-today">
+            <div class="card-content">
                 <div class="section-header">
-                    <h2><i class="fas fa-calendar-day"></i> Réservations pour aujourd'hui</h2>
+                    <h2><i class="fas fa-calendar-week"></i> Vue du calendrier</h2>
+                    <button class="btn btn-primary" onclick="showNewReservationModal()">
+                        <i class="fas fa-plus"></i> Nouvelle réservation
+                    </button>
                 </div>
                 
-                {% if today_reservations %}
-                    <div class="today-reservations-list">
-                        {% for reservation in today_reservations %}
-                            <div class="reservation-card status-{{ reservation.status }}">
-                                <div class="reservation-info">
-                                    <div class="reservation-time">{{ reservation.time|time:"H:i" }}</div>
-                                    <div class="reservation-guest-info">
-                                        <div class="reservation-name">{{ reservation.name }}</div>
-                                        <div class="reservation-phone">{{ reservation.phone }}</div>
-                                    </div>
-                                </div>
-                                
-                                <div class="reservation-details">
-                                    <div class="guest-count">
-                                        <i class="fas fa-users"></i>
-                                        {{ reservation.guests }} personnes
-                                    </div>
-                                    <div class="status-badge status-{{ reservation.status }}">
-                                        {{ reservation.get_status_display }}
-                                    </div>
-                                </div>
-                                
-                                <div class="reservation-actions">
-                                    {% if reservation.status == 'pending' %}
-                                        <button class="action-btn confirm-btn" onclick="updateReservationStatus({{ reservation.id }}, 'confirmed')" title="Confirmer">
-                                            <i class="fas fa-check"></i>
-                                        </button>
-                                        <button class="action-btn cancel-btn" onclick="updateReservationStatus({{ reservation.id }}, 'canceled')" title="Annuler">
-                                            <i class="fas fa-times"></i>
-                                        </button>
-                                    {% elif reservation.status == 'confirmed' %}
-                                        <button class="action-btn" onclick="updateReservationStatus({{ reservation.id }}, 'completed')" title="Marquer comme terminée">
-                                            <i class="fas fa-flag-checkered"></i>
-                                        </button>
-                                        <button class="action-btn cancel-btn" onclick="updateReservationStatus({{ reservation.id }}, 'canceled')" title="Annuler">
-                                            <i class="fas fa-times"></i>
-                                        </button>
-                                    {% endif %}
-                                    <button class="action-btn" title="Voir détails">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                </div>
+                <div class="filters">
+                    <form method="get" id="calendar-filter-form">
+                        <input type="date" name="calendar_date" class="filter-select" value="{{ calendar_date|default:'' }}" onchange="document.getElementById('calendar-filter-form').submit()">
+                    </form>
+                    
+                    <div class="calendar-navigation">
+                        <button class="btn btn-primary" onclick="navigateCalendar('prev')">
+                            <i class="fas fa-chevron-left"></i> Semaine précédente
+                        </button>
+                        <button class="btn btn-primary" onclick="navigateCalendar('current')">
+                            Cette semaine
+                        </button>
+                        <button class="btn btn-primary" onclick="navigateCalendar('next')">
+                            Semaine suivante <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="calendar-view">
+                    {% for day in calendar_days %}
+                        <div class="calendar-day">
+                            <div class="calendar-day-header">
+                                <span class="day-name">{{ day.name }}</span>
+                                <span class="day-date">{{ day.date|date:"d/m/Y" }}</span>
                             </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="empty-state">
-                        <i class="far fa-calendar-times"></i>
-                        <h3>Aucune réservation pour aujourd'hui</h3>
-                        <p>Les réservations apparaîtront ici quand vous en recevrez.</p>
-                    </div>
-                {% endif %}
+                            
+                            {% if day.reservations %}
+                                {% for reservation in day.reservations %}
+                                    <div class="day-reservation status-{{ reservation.status }}" onclick="showReservationDetails({{ reservation.id }})">
+                                        <div class="day-reservation-time">{{ reservation.time|time:"H:i" }}</div>
+                                        <div class="day-reservation-info">
+                                            <div>{{ reservation.name }}</div>
+                                            <div class="day-reservation-guests">{{ reservation.guests }} <i class="fas fa-users"></i></div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="empty-calendar-day">
+                                    <small>Aucune réservation</small>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
             </div>
             
-            <div class="all-reservations">
+            <div class="card-content">
                 <div class="section-header">
                     <h2><i class="fas fa-list"></i> Toutes les réservations</h2>
                 </div>
@@ -603,7 +616,7 @@
                             </thead>
                             <tbody>
                                 {% for reservation in reservations %}
-                                    <tr>
+                                    <tr class="reservation-row" onclick="showReservationDetails({{ reservation.id }})">
                                         <td>{{ reservation.name }}</td>
                                         <td>{{ reservation.date }} à {{ reservation.time|time:"H:i" }}</td>
                                         <td>{{ reservation.phone }}</td>
@@ -616,21 +629,21 @@
                                         <td>
                                             <div class="reservation-actions">
                                                 {% if reservation.status == 'pending' %}
-                                                    <button class="action-btn confirm-btn" onclick="updateReservationStatus({{ reservation.id }}, 'confirmed')" title="Confirmer">
+                                                    <button class="action-btn confirm-btn" onclick="updateReservationStatus({{ reservation.id }}, 'confirmed'); event.stopPropagation();" title="Confirmer">
                                                         <i class="fas fa-check"></i>
                                                     </button>
-                                                    <button class="action-btn cancel-btn" onclick="updateReservationStatus({{ reservation.id }}, 'canceled')" title="Annuler">
+                                                    <button class="action-btn cancel-btn" onclick="updateReservationStatus({{ reservation.id }}, 'canceled'); event.stopPropagation();" title="Annuler">
                                                         <i class="fas fa-times"></i>
                                                     </button>
                                                 {% elif reservation.status == 'confirmed' %}
-                                                    <button class="action-btn" onclick="updateReservationStatus({{ reservation.id }}, 'completed')" title="Marquer comme terminée">
+                                                    <button class="action-btn" onclick="updateReservationStatus({{ reservation.id }}, 'completed'); event.stopPropagation();" title="Marquer comme terminée">
                                                         <i class="fas fa-flag-checkered"></i>
                                                     </button>
-                                                    <button class="action-btn cancel-btn" onclick="updateReservationStatus({{ reservation.id }}, 'canceled')" title="Annuler">
+                                                    <button class="action-btn cancel-btn" onclick="updateReservationStatus({{ reservation.id }}, 'canceled'); event.stopPropagation();" title="Annuler">
                                                         <i class="fas fa-times"></i>
                                                     </button>
                                                 {% endif %}
-                                                <button class="action-btn" title="Voir détails">
+                                                <button class="action-btn" title="Voir détails" onclick="showReservationDetails({{ reservation.id }}); event.stopPropagation();">
                                                     <i class="fas fa-eye"></i>
                                                 </button>
                                             </div>
@@ -650,6 +663,16 @@
             </div>
         </div>
     </div>
+</div>
+
+<!-- Modal nouvelle réservation  -->
+<div class="modal fade" id="newReservationModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <!-- Modal content here -->
+</div>
+
+<!-- Modal détails de réservation  -->
+<div class="modal fade" id="reservationDetailsModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <!-- Modal content here -->
 </div>
 
 <script>
@@ -684,6 +707,22 @@
             console.error('Erreur:', error);
             alert('Une erreur est survenue lors de la mise à jour du statut.');
         });
+    }
+    
+    function showReservationDetails(reservationId) {
+        // À implémenter - afficher modal avec détails
+        alert(`Détails de la réservation #${reservationId} - Fonctionnalité à venir.`);
+    }
+    
+    function showNewReservationModal() {
+        // À implémenter - afficher modal pour nouvelle réservation
+        alert("Nouvelle réservation - Fonctionnalité à venir.");
+    }
+    
+    function navigateCalendar(direction) {
+        // À implémenter - navigation dans le calendrier
+        // Pour l'instant on simule un rechargement
+        alert(`Navigation ${direction} - Fonctionnalité à venir.`);
     }
 </script>
 {% endblock %} 

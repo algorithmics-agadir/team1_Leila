@@ -120,10 +120,10 @@ class Restaurant(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     capacity = models.PositiveIntegerField(default=50, help_text="Capacité maximale du restaurant")
-    
+
     def __str__(self):
         return f"{self.name} - {self.city.name}"
-    
+
     def get_image_preview(self):
         if self.image:
             return mark_safe(f'<img src="{self.image.url}" width="100" height="75" style="object-fit: cover; border-radius: 5px;" />')
@@ -139,13 +139,42 @@ class Restaurant(models.Model):
         return sum(review.rating for review in reviews) / reviews.count()
 
 class RestaurantAccount(models.Model):
+    ACCOUNT_TYPE_CHOICES = [
+        ('basic', 'Basique'),
+        ('premium', 'Premium'),
+        ('gold', 'Gold'),
+    ]
+
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='restaurant_account')
     restaurant = models.OneToOneField(Restaurant, on_delete=models.CASCADE, related_name='account')
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     
+    # Nouveaux champs pour plus de fonctionnalités
+    account_type = models.CharField(max_length=10, choices=ACCOUNT_TYPE_CHOICES, default='basic')
+    featured_until = models.DateTimeField(null=True, blank=True)
+    preferences = models.JSONField(default=dict, blank=True)
+    verification_status = models.BooleanField(default=False)
+    last_login = models.DateTimeField(null=True, blank=True)
+    theme_preference = models.CharField(max_length=20, default='standard')
+    notification_settings = models.JSONField(default=dict, blank=True)
+
     def __str__(self):
         return f"Compte restaurant pour {self.restaurant.name}"
+    
+    @property
+    def is_premium(self):
+        return self.account_type in ['premium', 'gold']
+    
+    @property
+    def is_featured(self):
+        if not self.featured_until:
+            return False
+        return timezone.now() <= self.featured_until
+    
+    @property
+    def days_since_creation(self):
+        return (timezone.now().date() - self.created_at.date()).days
 
 class Reservation(models.Model):
     # Statut de réservation
@@ -327,4 +356,230 @@ class ForumMessage(models.Model):
         verbose_name = "Message de forum"
         verbose_name_plural = "Messages de forum"
         ordering = ['created_at']
+
+class RestaurantDraft(models.Model):
+    """Modèle pour enregistrer rapidement les données d'un restaurant sans créer de compte complet"""
+    name = models.CharField(max_length=100)
+    email = models.EmailField()
+    phone = models.CharField(max_length=20)
+    city = models.ForeignKey(City, on_delete=models.SET_NULL, null=True, related_name='restaurant_drafts')
+    address = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    features = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    converted_to_account = models.BooleanField(default=False)
+    
+    def __str__(self):
+        return f"Brouillon: {self.name}"
+    
+    def convert_to_restaurant(self, user=None):
+        """Convertit ce brouillon en compte restaurant complet"""
+        from django.contrib.auth.models import User
+        
+        # Créer un utilisateur si non fourni
+        if not user:
+            username = self.email.split('@')[0] + str(self.id)
+            password = User.objects.make_random_password()
+            user = User.objects.create_user(
+                username=username[:150],
+                email=self.email,
+                password=password
+            )
+            
+        # Créer le restaurant
+        restaurant = Restaurant.objects.create(
+            name=self.name,
+            city=self.city,
+            address=self.address,
+            phone=self.phone,
+            email=self.email,
+            description=self.description
+        )
+        
+        # Créer le compte restaurant
+        account = RestaurantAccount.objects.create(
+            user=user,
+            restaurant=restaurant,
+            is_active=True
+        )
+        
+        # Marquer comme converti
+        self.converted_to_account = True
+        self.save()
+        
+        return restaurant, account, user
+
+class SubscriptionPlan(models.Model):
+    """Modèle pour les plans d'abonnement (restaurants et utilisateurs)"""
+    PLAN_TYPE_CHOICES = [
+        ('restaurant', 'Restaurant'),
+        ('user', 'Utilisateur')
+    ]
+    
+    name = models.CharField(max_length=100)
+    plan_type = models.CharField(max_length=20, choices=PLAN_TYPE_CHOICES)
+    price_monthly = models.DecimalField(max_digits=6, decimal_places=2)
+    price_yearly = models.DecimalField(max_digits=7, decimal_places=2)
+    description = models.TextField()
+    is_active = models.BooleanField(default=True)
+    features = models.JSONField(default=dict)
+    is_featured = models.BooleanField(default=False)
+    max_listings = models.IntegerField(default=1)  # Pour les comptes restaurant
+    badge_text = models.CharField(max_length=50, blank=True, null=True)
+    discount_percent = models.IntegerField(default=0)
+    
+    def __str__(self):
+        return f"{self.name} ({self.get_plan_type_display()})"
+    
+    class Meta:
+        verbose_name = "Plan d'abonnement"
+        verbose_name_plural = "Plans d'abonnement"
+        ordering = ['price_monthly']
+
+class RestaurantSubscription(models.Model):
+    """Modèle pour les abonnements restaurant actifs"""
+    STATUS_CHOICES = [
+        ('active', 'Actif'),
+        ('canceled', 'Annulé'),
+        ('expired', 'Expiré'),
+        ('trial', 'Essai')
+    ]
+    
+    restaurant_account = models.OneToOneField(RestaurantAccount, on_delete=models.CASCADE, related_name='subscription')
+    plan = models.ForeignKey(SubscriptionPlan, on_delete=models.PROTECT)
+    start_date = models.DateField(auto_now_add=True)
+    end_date = models.DateField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
+    is_auto_renew = models.BooleanField(default=True)
+    notes = models.TextField(blank=True)
+    
+    def __str__(self):
+        return f"Abonnement {self.plan.name} pour {self.restaurant_account.restaurant.name}"
+    
+    @property
+    def is_active(self):
+        return self.status == 'active' and self.end_date >= timezone.now().date()
+    
+    @property
+    def days_remaining(self):
+        if self.end_date < timezone.now().date():
+            return 0
+        return (self.end_date - timezone.now().date()).days
+
+class UserSubscription(models.Model):
+    """Modèle pour les abonnements utilisateur actifs"""
+    STATUS_CHOICES = [
+        ('active', 'Actif'),
+        ('canceled', 'Annulé'),
+        ('expired', 'Expiré'),
+        ('trial', 'Essai')
+    ]
+    
+    user_profile = models.OneToOneField(UserProfile, on_delete=models.CASCADE, related_name='subscription')
+    plan = models.ForeignKey(SubscriptionPlan, on_delete=models.PROTECT)
+    start_date = models.DateField(auto_now_add=True)
+    end_date = models.DateField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
+    is_auto_renew = models.BooleanField(default=True)
+    
+    def __str__(self):
+        return f"Abonnement {self.plan.name} pour {self.user_profile.user.username}"
+    
+    @property
+    def is_active(self):
+        return self.status == 'active' and self.end_date >= timezone.now().date()
+    
+    @property
+    def days_remaining(self):
+        if self.end_date < timezone.now().date():
+            return 0
+        return (self.end_date - timezone.now().date()).days
+
+class Order(models.Model):
+    """Modèle pour les commandes au restaurant"""
+    STATUS_NEW = 'new'
+    STATUS_PREPARING = 'preparing'
+    STATUS_READY = 'ready'
+    STATUS_DELIVERED = 'delivered'
+    STATUS_CANCELLED = 'cancelled'
+    STATUS_PAID = 'paid'
+    
+    STATUS_CHOICES = [
+        (STATUS_NEW, 'Nouvelle'),
+        (STATUS_PREPARING, 'En préparation'),
+        (STATUS_READY, 'Prête'),
+        (STATUS_DELIVERED, 'Livrée'),
+        (STATUS_CANCELLED, 'Annulée'),
+        (STATUS_PAID, 'Payée')
+    ]
+    
+    PAYMENT_CASH = 'cash'
+    PAYMENT_CARD = 'card'
+    PAYMENT_ONLINE = 'online'
+    
+    PAYMENT_CHOICES = [
+        (PAYMENT_CASH, 'Espèces'),
+        (PAYMENT_CARD, 'Carte bancaire'),
+        (PAYMENT_ONLINE, 'Paiement en ligne')
+    ]
+    
+    restaurant = models.ForeignKey(Restaurant, on_delete=models.CASCADE, related_name='orders')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='orders', null=True, blank=True)
+    reservation = models.ForeignKey(Reservation, on_delete=models.SET_NULL, related_name='orders', null=True, blank=True)
+    table_number = models.CharField(max_length=10, blank=True, null=True)
+    customer_name = models.CharField(max_length=100, blank=True, null=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_NEW)
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    payment_method = models.CharField(max_length=20, choices=PAYMENT_CHOICES, default=PAYMENT_CASH)
+    is_takeaway = models.BooleanField(default=False)
+    order_time = models.DateTimeField(auto_now_add=True)
+    delivery_time = models.DateTimeField(null=True, blank=True)
+    notes = models.TextField(blank=True)
+    special_instructions = models.TextField(blank=True)
+    order_code = models.CharField(max_length=10, unique=True, blank=True, null=True)
+    
+    def __str__(self):
+        return f"Commande #{self.id} - {self.restaurant.name} - {self.get_status_display()}"
+    
+    def save(self, *args, **kwargs):
+        # Générer un code de commande si nécessaire
+        if not self.order_code:
+            import random
+            import string
+            # Générer un code aléatoire de 6 caractères alphanumériques
+            self.order_code = ''.join(
+                random.choices(string.ascii_uppercase + string.digits, k=6)
+            )
+        super().save(*args, **kwargs)
+    
+    @property
+    def is_completed(self):
+        return self.status in [self.STATUS_DELIVERED, self.STATUS_PAID]
+    
+    @property
+    def can_cancel(self):
+        return self.status not in [self.STATUS_DELIVERED, self.STATUS_CANCELLED, self.STATUS_PAID]
+    
+    @property
+    def preparation_time_minutes(self):
+        if not self.delivery_time:
+            return 0
+        diff = self.delivery_time - self.order_time
+        return int(diff.total_seconds() / 60)
+
+class OrderItem(models.Model):
+    """Éléments individuels d'une commande"""
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
+    dish = models.ForeignKey(Dish, on_delete=models.CASCADE, related_name='order_items')
+    quantity = models.PositiveIntegerField(default=1)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    notes = models.TextField(blank=True)
+    is_completed = models.BooleanField(default=False)
+    
+    def __str__(self):
+        return f"{self.quantity}x {self.dish.name} (Commande #{self.order.id})"
+    
+    @property
+    def subtotal(self):
+        return self.price * self.quantity
 

@@ -364,7 +364,7 @@
                 <div class="form-check">
                     <input type="checkbox" id="terms" name="terms" class="form-check-input" required>
                     <label for="terms" class="form-check-label">
-                        J'accepte les <a href="#" target="_blank">conditions d'utilisation</a> et la <a href="#" target="_blank">politique de confidentialité</a>
+                        J'accepte les <a href="{% url 'terms_of_service' %}" target="_blank">conditions d'utilisation</a> et la <a href="{% url 'privacy_policy' %}" target="_blank">politique de confidentialité</a>
                     </label>
                 </div>
                 
@@ -770,6 +770,7 @@
                 body: JSON.stringify(data)
             })
             .then(response => {
+                console.log('Status:', response.status);
                 if (!response.ok) {
                     return response.json().then(data => {
                         throw new Error(JSON.stringify(data.errors));
@@ -778,14 +779,16 @@
                 return response.json();
             })
             .then(data => {
+                console.log('Success response:', data);
                 if (data.success) {
                     // Animation de succès
+                    showSuccess("Compte créé avec succès!");
                     button.innerHTML = '<i class="fas fa-check"></i> Compte créé avec succès!';
                     button.style.backgroundColor = '#2ecc71';
                     
                     // Redirection après un délai
                     setTimeout(() => {
-                        if (accountType === 'restaurant') {
+                        if (data.account_type === 'restaurant') {
                             window.location.href = '{% url "restaurant_dashboard" %}';
                         } else {
                             window.location.href = '{% url "accueil" %}';
@@ -794,6 +797,7 @@
                 }
             })
             .catch(error => {
+                console.error('Error:', error);
                 // Animation d'erreur
                 button.innerHTML = originalText;
                 button.disabled = false;
@@ -805,9 +809,9 @@
                     else if (errors.email) showError(errors.email);
                     else if (errors.password) showError(errors.password);
                     else if (errors.general) showError(errors.general);
-                    else showError("Une erreur est survenue lors de la création du compte");
+                    else showError("Une erreur est survenue lors de la création du compte: " + error.message);
                 } catch (e) {
-                    showError("Une erreur est survenue lors de la création du compte");
+                    showError("Une erreur est survenue lors de la création du compte: " + error.message);
                 }
             });
         });
